@@ -56,7 +56,7 @@ export function ProjectDetail({
   // Move focus into the page on open, and back to the document on unmount.
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    backButton.current?.focus({ preventScroll: true });
+    backButton.current?.focus({ preventScroll: true, focusVisible: false });
     return () => {
       if (previous && previous.isConnected && previous !== document.body) {
         previous.focus({ preventScroll: true });
@@ -191,7 +191,7 @@ export function ProjectDetail({
             ref={backButton}
             type="button"
             onClick={onClose}
-            className="group label-mono link-draw flex items-center gap-2 stagger-rise"
+            className="group label-mono link-draw flex items-center gap-2 stagger-rise outline-none"
             style={stagger(0)}
           >
             <span
@@ -330,7 +330,7 @@ export function ProjectDetail({
             <button
               type="button"
               onClick={onClose}
-              className="label-mono link-draw text-ink-muted"
+              className="label-mono link-draw text-ink-muted outline-none"
             >
               ← Back to all projects
             </button>
