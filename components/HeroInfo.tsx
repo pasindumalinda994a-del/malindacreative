@@ -47,6 +47,16 @@ export function HeroInfo({
         hidden ? "opacity-0" : "opacity-100"
       }`}
     >
+      {/* Soft paper washes for header + bottom project info over bright imagery. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-36 animate-scrim-in bg-gradient-to-b from-paper/95 via-paper/55 to-transparent md:h-44 [animation-duration:1.25s] [animation-delay:80ms]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] animate-scrim-in bg-gradient-to-t from-paper via-paper/45 to-transparent md:h-[46%] [animation-duration:1.15s] [animation-delay:40ms]"
+      />
+
       {/* Section label — top right, where the strip is farthest away. */}
       <div className="absolute right-6 top-[5.75rem] flex flex-col items-end gap-2 text-right md:right-10 md:top-[6.5rem]">
         <p className="label-mono">Featured Projects</p>
