@@ -56,7 +56,7 @@ export function ProjectDetail({
   // Move focus into the page on open, and back to the document on unmount.
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    backButton.current?.focus({ preventScroll: true, focusVisible: false });
+    backButton.current?.focus({ preventScroll: true });
     return () => {
       if (previous && previous.isConnected && previous !== document.body) {
         previous.focus({ preventScroll: true });
