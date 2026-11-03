@@ -61,7 +61,7 @@ export function HeroInfo({
       <div className="absolute right-6 top-[5.5rem] flex flex-col items-end gap-1 text-right md:right-10 md:top-[6.5rem] md:gap-2">
         <p className="label-mono">Featured Projects</p>
         <p className="label-mono flex items-center gap-2 text-ink-muted/70 md:text-ink-muted">
-          <span aria-hidden className="size-1.5 rounded-full bg-accent" />
+          <span aria-hidden className="status-bulb size-1.5" />
           {pad(total)} selected works
         </p>
       </div>

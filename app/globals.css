@@ -39,6 +39,7 @@
     var(--text-ease, cubic-bezier(0.25, 1, 0.5, 1)) both;
   --animate-rise-in: rise-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-scrim-in: scrim-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-dot-pulse: bulb-glow 2.1s cubic-bezier(0.37, 0, 0.63, 1) infinite;
 
   @keyframes fade-up {
     from {
@@ -79,6 +80,38 @@
     }
     to {
       opacity: 1;
+    }
+  }
+
+  /*
+   * Filament-style bulb: asymmetric bright hold → soft dim → warm re-ignite.
+   * Glow lives in box-shadow so the core stays readable.
+   */
+  @keyframes bulb-glow {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow:
+        0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent),
+        0 0 5.5px 1.5px color-mix(in srgb, var(--color-accent) 58%, transparent);
+    }
+    50% {
+      opacity: 0.55;
+      box-shadow:
+        0 0 0 3.5px color-mix(in srgb, var(--color-accent) 8%, transparent),
+        0 0 2px 0.5px color-mix(in srgb, var(--color-accent) 22%, transparent);
+    }
+  }
+
+  @keyframes bulb-halo {
+    0%,
+    100% {
+      opacity: 0.65;
+      transform: scale(1.05);
+    }
+    50% {
+      opacity: 0.18;
+      transform: scale(0.82);
     }
   }
 }
@@ -145,9 +178,49 @@ body {
   animation-delay: calc(var(--i, 0) * 70ms + var(--stagger-base, 0ms));
 }
 
+/* Live status bulb: core + soft radial halo breathing in sync. */
+@utility status-bulb {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  box-shadow:
+    0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent),
+    0 0 5px 1.5px color-mix(in srgb, var(--color-accent) 55%, transparent);
+  will-change: opacity, box-shadow;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-accent) 55%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent) 18%, transparent) 45%,
+      transparent 72%
+    );
+    pointer-events: none;
+    will-change: opacity, transform;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-bulb {
+    animation: bulb-glow 2.1s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  }
+
+  .status-bulb::before {
+    animation: bulb-halo 2.1s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stagger-rise,
   .animate-scrim-in,
+  .animate-dot-pulse,
+  .motion-safe\:animate-dot-pulse,
   .motion-safe\:animate-fade-up,
   .motion-safe\:animate-mask-up {
     animation: none !important;
