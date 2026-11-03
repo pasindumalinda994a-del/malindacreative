@@ -23,7 +23,6 @@ export function SiteHeader({ tone, minimal = false, backdrop = false }: SiteHead
   const isPaper = tone === "paper";
   const textColor = isPaper ? "text-paper" : "text-ink";
   const ruleColor = isPaper ? "border-paper/30" : "border-rule";
-  const mutedColor = isPaper ? "text-paper/70" : "text-ink-muted";
 
   return (
     <header
@@ -40,10 +39,9 @@ export function SiteHeader({ tone, minimal = false, backdrop = false }: SiteHead
         <Link
           href="/"
           aria-label="M — home"
-          className={`pointer-events-auto col-span-3 flex items-baseline gap-3 border-t pt-3 md:col-span-2 ${ruleColor}`}
+          className="pointer-events-auto col-span-3 md:col-span-2"
         >
           <span className="display-serif text-[1.75rem] leading-none">M</span>
-          <span className={`label-mono hidden md:inline ${mutedColor}`}>Studio</span>
         </Link>
 
         {/* Section links */}

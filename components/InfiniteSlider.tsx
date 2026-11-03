@@ -39,6 +39,27 @@ export function InfiniteSlider({
 
   const activeSlide = slides[activeIndex] ?? slides[0];
   const [heroCovered, setHeroCovered] = useState(false);
+  const [narrowViewport, setNarrowViewport] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(`(max-width: ${config.narrowBreakpointPx - 1}px)`);
+    const sync = () => setNarrowViewport(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, [config.narrowBreakpointPx]);
+
+  const topo = narrowViewport
+    ? {
+        speed: topographicConfig.narrow.speed,
+        density: topographicConfig.narrow.density,
+        opacity: topographicConfig.narrow.opacity,
+      }
+    : {
+        speed: topographicConfig.speed,
+        density: topographicConfig.density,
+        opacity: topographicConfig.opacity,
+      };
 
   // --- URL sync: ?project=slug ----------------------------------------------
   const previousView = useRef(view);
@@ -93,9 +114,9 @@ export function InfiniteSlider({
       <TopographicFlow
         className="pointer-events-none fixed inset-0 z-0 h-full w-full"
         preset={topographicConfig.preset}
-        speed={topographicConfig.speed}
-        density={topographicConfig.density}
-        opacity={topographicConfig.opacity}
+        speed={topo.speed}
+        density={topo.density}
+        opacity={topo.opacity}
         hover={topographicConfig.hover}
         paused={topographicConfig.paused || isOpen}
         animateEntrance
@@ -103,7 +124,7 @@ export function InfiniteSlider({
 
       <canvas
         ref={canvasRef}
-        aria-label="Project strip. Drag or use the arrow keys to browse, click or press Enter to open."
+        aria-label="Project strip. Swipe or drag to browse, tap or press Enter to open."
         className={`fixed inset-0 z-[1] h-full w-full touch-none ${
           view !== "browse" ? "cursor-default" : hovering ? "cursor-none" : "cursor-grab"
         }`}

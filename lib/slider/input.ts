@@ -6,7 +6,8 @@ const WHEEL_BURST = 0.001;
 const DRAG_MOVE_BURST = 0.02;
 const DRAG_RELEASE_BURST = 0.005;
 const TOUCH_MOVE_BURST = 0.02;
-const SWIPE_RELEASE_BURST = 0.45;
+/** Soft release kick — strong enough to feel, light enough for phones. */
+const SWIPE_RELEASE_BURST = 0.12;
 
 // Ignore wheel jumps bigger than this (some mice send huge values).
 const WHEEL_MAX = 150;
@@ -17,7 +18,7 @@ const MIN_SWIPE_VELOCITY = 0.5;
 const MIN_DRAG_FLING = 2; // Pixels moved in the last mouse move.
 
 /** Pointer movement below this is treated as a click / tap, not a drag. */
-const CLICK_MOVE_THRESHOLD = 6;
+const CLICK_MOVE_THRESHOLD = 10;
 
 export type SliderInputOptions = {
   /** Called for a click / tap on the canvas that did not drag. */
@@ -39,16 +40,18 @@ export type SliderInputOptions = {
 /**
  * Listens to mouse wheel, mouse drag, touch swipe and the keyboard, and turns
  * them into changes on the motion state. Returns a function that removes all listeners.
+ *
+ * `getConfig` is read on each input event so narrow ↔ desktop speed overrides stay live.
  */
 export function attachSliderInput(
   canvas: HTMLCanvasElement,
   state: MotionState,
-  config: AnimationConfig,
+  getConfig: () => AnimationConfig,
   options: SliderInputOptions = {},
 ) {
   const { onSelect, onPointerMove, onPointerLeave, onStep, onOpen, onClose, getInputLocked } =
     options;
-  const isHorizontal = config.direction === "horizontal";
+  const isHorizontal = getConfig().direction === "horizontal";
 
   /** Reads the pointer position along the direction the slides travel. */
   function getPointerPosition(point: { clientX: number; clientY: number }) {
@@ -103,7 +106,7 @@ export function attachSliderInput(
     const delta = Math.sign(rawDelta) * Math.min(Math.abs(rawDelta), WHEEL_MAX);
 
     addDistortionBurst(state, Math.abs(delta) * WHEEL_BURST);
-    state.scrollTarget += delta * config.wheelSpeed;
+    state.scrollTarget += delta * getConfig().wheelSpeed;
     keepScrollingFor(150);
   }
 
@@ -152,7 +155,7 @@ export function attachSliderInput(
 
     addDistortionBurst(state, Math.abs(delta) * DRAG_MOVE_BURST);
     // The slides follow the mouse, so the scroll target goes the opposite way.
-    state.scrollTarget -= delta * config.dragSpeed;
+    state.scrollTarget -= delta * getConfig().dragSpeed;
     state.isScrolling = true;
   }
 
@@ -174,7 +177,7 @@ export function attachSliderInput(
     if (isLocked()) return;
 
     if (Math.abs(lastDragDelta) > MIN_DRAG_FLING) {
-      state.scrollMomentum = -lastDragDelta * config.dragMomentum;
+      state.scrollMomentum = -lastDragDelta * getConfig().dragMomentum;
       addDistortionBurst(state, Math.abs(lastDragDelta) * DRAG_RELEASE_BURST);
       keepScrollingFor(800);
     }
@@ -220,7 +223,7 @@ export function attachSliderInput(
     touchLastPosition = position;
 
     addDistortionBurst(state, Math.abs(delta) * TOUCH_MOVE_BURST);
-    state.scrollTarget -= delta * config.touchSpeed;
+    state.scrollTarget -= delta * getConfig().touchSpeed;
     state.isScrolling = true;
   }
 
@@ -244,7 +247,7 @@ export function attachSliderInput(
     const swipeVelocity = (touchLastPosition - touchStartPosition) * SWIPE_VELOCITY_SCALE;
 
     if (Math.abs(swipeVelocity) > MIN_SWIPE_VELOCITY) {
-      state.scrollMomentum = -swipeVelocity * config.touchMomentum;
+      state.scrollMomentum = -swipeVelocity * getConfig().touchMomentum;
       addDistortionBurst(state, Math.abs(swipeVelocity) * SWIPE_RELEASE_BURST);
       keepScrollingFor(800);
     }

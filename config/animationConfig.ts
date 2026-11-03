@@ -106,15 +106,15 @@ const baseConfig = {
 
   // --- Hero expand (click a slide to fill the screen) -----------------
   /** How long the expand / collapse takes. */
-  focusDuration: 0.85,
+  focusDuration: 1.15,
   /** Easing curve of the expand / collapse. */
-  focusEase: "easeInOutCubic" as EaseName,
-  /** How much of the viewport the hero covers (1 = full screen, object-fit cover). */
+  focusEase: "easeOutCubic" as EaseName,
+  /** How much of the viewport the uniform-cover hero may occupy (1 = edge-to-edge). */
   focusFill: 1,
-  /** Gap in CSS pixels between the hero and each viewport edge. */
-  focusInsetPx: 8,
-  /** Corner radius in CSS pixels on the focused hero (0 = square). */
-  focusCornerRadiusPx: 8,
+  /** Gap in CSS pixels between the hero and each viewport edge (0 = full bleed). */
+  focusInsetPx: 0,
+  /** Corner radius in CSS pixels on the focused hero (0 = square / no clip). */
+  focusCornerRadiusPx: 0,
   /** How far the focused slide moves toward the camera. */
   focusZ: 0.35,
   /** Opacity of non-focused slides while expanded. */
@@ -147,14 +147,33 @@ const baseConfig = {
   // --- Narrow screens (below `narrowBreakpointPx`) --------------------
   /** Viewport width in CSS pixels under which the narrow overrides apply. */
   narrowBreakpointPx: 768,
-  /** Gentler strip turn so the far side stays readable on phones. */
-  narrowRollYaw: 28,
-  /** Closer camera on phones so the strip still fills the width. */
-  narrowCameraDistance: 4.4,
-  /** Strip lift on phones. */
-  narrowStripOffsetY: 0.35,
-  /** Space kept beside the slides on phones (smaller, so the strip still fills the width). */
-  narrowSidePadding: 0.1,
+  /** No strip turn on phones — flat facing the camera (no left/right depth). */
+  narrowRollYaw: 0,
+  /** Camera distance on phones — slightly pulled back so neighbors peek. */
+  narrowCameraDistance: 4.7,
+  /** Strip lift on phones (tuned for the slimmer mobile bottom chrome). */
+  narrowStripOffsetY: 0.22,
+  /** Space kept beside the slides on phones. */
+  narrowSidePadding: 0.14,
+  /** Bend amount on phones — lighter than desktop so swipes feel less heavy. */
+  narrowBendStrength: 0.9,
+  /** Image drift inside frames on phones. */
+  narrowParallaxStrength: 0.08,
+  /** Scale at full swipe speed on phones (closer to 1 = less squash). */
+  narrowSpeedScale: 0.96,
+  /** Touch fling strength on phones (shorter glide). */
+  narrowTouchMomentum: 0.045,
+  /** DPR cap on phones. */
+  narrowMaxPixelRatio: 1.5,
+  /** Plane grid on phones (applied at scene create from the init viewport). */
+  narrowWidthSegments: 16,
+  narrowHeightSegments: 8,
+  /**
+   * Slide width = height × aspect on phones.
+   * Lower than desktop (1.78) so frames sit taller and suit the mobile layout.
+   * Applied at scene create from the init viewport.
+   */
+  narrowAspectRatio: 1.2,
 
   // --- Quality --------------------------------------------------------
   /** Grid detail of each slide. More segments = smoother bend, more work. */
@@ -181,6 +200,14 @@ export function resolveResponsiveConfig(config: AnimationConfig, viewportWidth: 
     cameraDistance: config.narrowCameraDistance,
     stripOffsetY: config.narrowStripOffsetY,
     sidePadding: config.narrowSidePadding,
+    bendStrength: config.narrowBendStrength,
+    parallaxStrength: config.narrowParallaxStrength,
+    speedScale: config.narrowSpeedScale,
+    touchMomentum: config.narrowTouchMomentum,
+    maxPixelRatio: config.narrowMaxPixelRatio,
+    widthSegments: config.narrowWidthSegments,
+    heightSegments: config.narrowHeightSegments,
+    aspectRatio: config.narrowAspectRatio,
   };
 }
 

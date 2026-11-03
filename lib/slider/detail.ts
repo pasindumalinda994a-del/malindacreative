@@ -56,6 +56,6 @@ export function getDetailPose(progress: number, config: AnimationConfig): Detail
     scale: THREE.MathUtils.lerp(1, config.detailScale, t),
     lift: config.detailLift * t,
     opacity: THREE.MathUtils.lerp(1, config.detailOpacity, t),
-    cornerPx: 8 * t,
+    cornerPx: 0,
   };
 }

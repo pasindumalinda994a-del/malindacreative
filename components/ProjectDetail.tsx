@@ -129,27 +129,63 @@ export function ProjectDetail({
     >
       {/* --- 1. Hero viewport: transparent over the WebGL image ----------------- */}
       <section className="relative h-svh w-full text-paper">
-        {/* Soft scrims for legibility over any photo; outer fades in on open, inner fades on scroll. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-2 top-2 h-40 animate-scrim-in [animation-duration:1.25s] [animation-delay:80ms]"
-        >
+        {/* Full-bleed frame over the WebGL hero (no margin / radius). */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Soft scrims for legibility; outer fades in on open, inner fades on scroll. */}
           <div
-            style={{ opacity: "calc(1 - var(--detail-p, 0) * 1.6)" }}
-            className="absolute inset-0 rounded-t-lg bg-gradient-to-b from-ink/45 to-transparent"
-          />
-        </div>
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-2 bottom-2 h-[55%] animate-scrim-in [animation-duration:1.15s] [animation-delay:40ms]"
-        >
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-40 animate-scrim-in [animation-duration:1.25s] [animation-delay:80ms]"
+          >
+            <div
+              style={{ opacity: "calc(1 - var(--detail-p, 0) * 1.6)" }}
+              className="absolute inset-0 bg-gradient-to-b from-ink/45 to-transparent"
+            />
+          </div>
           <div
-            style={{ opacity: "calc(1 - var(--detail-p, 0) * 1.6)" }}
-            className="absolute inset-0 rounded-b-lg bg-gradient-to-t from-ink/70 via-ink/25 to-transparent"
-          />
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] animate-scrim-in [animation-duration:1.15s] [animation-delay:40ms]"
+          >
+            <div
+              style={{ opacity: "calc(1 - var(--detail-p, 0) * 1.6)" }}
+              className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/25 to-transparent"
+            />
+          </div>
+
+          {/* Title row — bottom of the image frame */}
+          <div className="absolute inset-x-4 bottom-4 md:inset-x-6 md:bottom-6">
+            <div className="grid grid-cols-12 items-end gap-x-4 gap-y-4 md:gap-x-6">
+              <div className="col-span-12 md:col-span-9">
+                <p className="label-mono mb-3 text-paper/70 stagger-rise" style={stagger(2)}>
+                  {slide.category} <span className="mx-2 text-paper/40">—</span> {slide.year}
+                </p>
+                <h1
+                  id="project-title"
+                  className="display-serif overflow-hidden text-[clamp(3rem,10vw,11rem)] stagger-rise"
+                  style={stagger(3)}
+                >
+                  {slide.name}
+                </h1>
+              </div>
+              <div className="col-span-12 flex items-end justify-between md:col-span-3 md:flex-col md:items-end md:gap-4">
+                <p
+                  className="label-mono tabular-nums text-paper/80 stagger-rise"
+                  style={stagger(4)}
+                >
+                  {pad(index + 1)} <span className="mx-1 text-paper/40">—</span> {pad(total)}
+                </p>
+                <p
+                  className="label-mono flex items-center gap-2 text-paper/60 stagger-rise"
+                  style={stagger(5)}
+                >
+                  Scroll
+                  <span aria-hidden className="inline-block h-6 w-px bg-paper/50" />
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Back */}
+        {/* Back / stats stay viewport-relative so they clear the fixed site header. */}
         <div className="absolute left-6 top-[5.75rem] md:left-10 md:top-[6.5rem]">
           <button
             ref={backButton}
@@ -168,7 +204,6 @@ export function ProjectDetail({
           </button>
         </div>
 
-        {/* Stats column — right */}
         <dl className="absolute right-6 top-[5.75rem] hidden flex-col items-end gap-5 text-right sm:flex md:right-10 md:top-[6.5rem]">
           {[
             ["Client", slide.client],
@@ -181,39 +216,6 @@ export function ProjectDetail({
             </div>
           ))}
         </dl>
-
-        {/* Title row — bottom */}
-        <div className="absolute inset-x-6 bottom-6 md:inset-x-10 md:bottom-8">
-          <div className="grid grid-cols-12 items-end gap-x-4 gap-y-4 md:gap-x-6">
-            <div className="col-span-12 md:col-span-9">
-              <p className="label-mono mb-3 text-paper/70 stagger-rise" style={stagger(2)}>
-                {slide.category} <span className="mx-2 text-paper/40">—</span> {slide.year}
-              </p>
-              <h1
-                id="project-title"
-                className="display-serif overflow-hidden text-[clamp(3rem,10vw,11rem)] stagger-rise"
-                style={stagger(3)}
-              >
-                {slide.name}
-              </h1>
-            </div>
-            <div className="col-span-12 flex items-end justify-between md:col-span-3 md:flex-col md:items-end md:gap-4">
-              <p
-                className="label-mono tabular-nums text-paper/80 stagger-rise"
-                style={stagger(4)}
-              >
-                {pad(index + 1)} <span className="mx-1 text-paper/40">—</span> {pad(total)}
-              </p>
-              <p
-                className="label-mono flex items-center gap-2 text-paper/60 stagger-rise"
-                style={stagger(5)}
-              >
-                Scroll
-                <span aria-hidden className="inline-block h-6 w-px bg-paper/50" />
-              </p>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* --- 2. Paper surface: credits, copy, visuals, next --------------------- */}

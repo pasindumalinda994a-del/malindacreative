@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { AnimationConfig } from "@/config/animationConfig";
 import type { Slide } from "@/config/slides";
 import { attachSlideCornerClip } from "./corners";
+import { applyCoverCrop } from "./effects";
 import type { SlideLayout } from "./layout";
 
 /** The small label drawn on the image (index + name). One plane per slide; its vertices bend with the photo. */
@@ -119,7 +120,7 @@ export function createSliderScene(
 
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = anisotropy;
-      coverPlane(texture, width / height, config.parallaxStrength);
+      applyCoverCrop(texture, width / height, config.parallaxStrength);
       material.map = texture;
       material.color.set(0xffffff);
       material.needsUpdate = true;
@@ -179,6 +180,7 @@ export function createSliderScene(
 
   function setConfig(next: AnimationConfig) {
     config = next;
+    // Camera / scale update only — rollYaw and stripOffsetY are applied each frame in focus.ts.
     fit();
   }
 
@@ -285,25 +287,6 @@ function createSlideTitle(
     mesh,
     flatPositions: Float32Array.from(geometry.attributes.position.array),
   };
-}
-
-/**
- * Makes the image fill its plane without stretching, like CSS `object-fit: cover`.
- * The image is also zoomed in by `parallaxStrength`, which leaves spare room
- * around the edges for the parallax drift (see updateParallax in effects.ts).
- */
-function coverPlane(texture: THREE.Texture, planeAspect: number, parallaxStrength: number) {
-  const image = texture.image as HTMLImageElement;
-  const imageAspect = image.width / image.height;
-  const zoom = 1 + parallaxStrength;
-
-  // Show only part of the image along its longer side.
-  const visibleX = imageAspect > planeAspect ? planeAspect / imageAspect : 1;
-  const visibleY = imageAspect > planeAspect ? 1 : imageAspect / planeAspect;
-
-  texture.repeat.set(visibleX / zoom, visibleY / zoom);
-  // Center the visible part.
-  texture.offset.set((1 - texture.repeat.x) / 2, (1 - texture.repeat.y) / 2);
 }
 
 /** Scales the slides down on small screens so they always fit. */

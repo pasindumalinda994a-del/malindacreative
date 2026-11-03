@@ -17,4 +17,10 @@ export const topographicConfig = {
   /** No pointer reshape — slider owns input. */
   hover: 0,
   paused: false,
+  /** Narrow screens (matches animationConfig.narrowBreakpointPx). */
+  narrow: {
+    speed: 0.7,
+    density: 3,
+    opacity: 0.28,
+  },
 };

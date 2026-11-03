@@ -147,7 +147,7 @@ export function updateParallax(slide: SlideMesh, config: AnimationConfig) {
   const { x, y } = slide.mesh.position;
   const { repeat } = texture;
 
-  // How far the photo is allowed to drift (the extra room from the zoom in coverPlane).
+  // How far the photo is allowed to drift (the extra room from the zoom in applyCoverCrop).
   const driftX = (repeat.x * config.parallaxStrength) / 2;
   const driftY = (repeat.y * config.parallaxStrength) / 2;
 
@@ -156,13 +156,42 @@ export function updateParallax(slide: SlideMesh, config: AnimationConfig) {
 }
 
 /**
- * Pins the photo to a stable centered cover crop — no parallax drift.
- * Used in fullscreen so the hero image stays fixed and does not fight the view.
+ * Makes the image fill its frame without stretching, like CSS `object-fit: cover`.
+ * Zoomed by `parallaxStrength` so updateParallax has room to drift.
  */
-export function lockFullscreenCover(slide: SlideMesh) {
+export function applyCoverCrop(
+  texture: THREE.Texture,
+  planeAspect: number,
+  parallaxStrength: number,
+) {
+  const image = texture.image as HTMLImageElement | undefined;
+  if (!image?.width || !image?.height) return;
+
+  const imageAspect = image.width / image.height;
+  const zoom = 1 + parallaxStrength;
+
+  const visibleX = imageAspect > planeAspect ? planeAspect / imageAspect : 1;
+  const visibleY = imageAspect > planeAspect ? 1 : imageAspect / planeAspect;
+
+  texture.repeat.set(visibleX / zoom, visibleY / zoom);
+  texture.offset.set((1 - texture.repeat.x) / 2, (1 - texture.repeat.y) / 2);
+}
+
+/**
+ * Applies strip-aspect cover while focused. Pass a lerped `parallaxStrength`
+ * (e.g. full → 0 over focus.progress) so zoom-out eases instead of popping.
+ */
+export function lockFullscreenCover(slide: SlideMesh, parallaxStrength: number) {
   const texture = slide.mesh.material.map;
   if (!texture) return;
+  const { width, height } = slide.mesh.geometry.parameters;
+  applyCoverCrop(texture, width / height, parallaxStrength);
+}
 
-  texture.offset.x = (1 - texture.repeat.x) / 2;
-  texture.offset.y = (1 - texture.repeat.y) / 2;
+/** Restores strip cover UVs (with parallax zoom) after leaving fullscreen. */
+export function restoreStripCover(slide: SlideMesh, config: AnimationConfig) {
+  const texture = slide.mesh.material.map;
+  if (!texture) return;
+  const { width, height } = slide.mesh.geometry.parameters;
+  applyCoverCrop(texture, width / height, config.parallaxStrength);
 }

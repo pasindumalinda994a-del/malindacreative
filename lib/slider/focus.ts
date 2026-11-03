@@ -231,21 +231,29 @@ export function applyFocusOverlay({
 
   const groupScale = slideGroup.scale.x || 1;
   const insetPx = config.focusInsetPx + detail.insetPx * t;
+  const focusedSlide = slideMeshes[focus.index];
+  // Cover scale at the current depth so size tracks Z through the tween.
+  const currentFocusZ = lerp(0, config.focusZ, t);
   const heroScale = getHeroScale(
     camera,
     viewport,
     groupScale,
-    slideMeshes[focus.index],
+    focusedSlide,
     config.focusFill,
     insetPx,
-    config.focusZ,
+    currentFocusZ,
   );
 
   const insetWidth = Math.max(1, viewport.width - insetPx * 2);
   const insetHeight = Math.max(1, viewport.height - insetPx * 2);
+  // Covered (oversized) on-screen plane size — corner radius stays pixel-consistent.
+  const plane = focusedSlide.mesh.geometry.parameters;
+  const planeAspect = plane.width / plane.height;
+  const heroPxW = Math.max(insetWidth, insetHeight * planeAspect) * config.focusFill;
+  const heroPxH = Math.max(insetHeight, insetWidth / planeAspect) * config.focusFill;
   const cornerRadius = (config.focusCornerRadiusPx + detail.cornerPx) * t;
-  const cornerUvX = Math.min(0.5, cornerRadius / insetWidth);
-  const cornerUvY = Math.min(0.5, cornerRadius / insetHeight);
+  const cornerUvX = Math.min(0.5, cornerRadius / Math.max(1, heroPxW));
+  const cornerUvY = Math.min(0.5, cornerRadius / Math.max(1, heroPxH));
 
   slideMeshes.forEach((slide, index) => {
     const { mesh } = slide;
@@ -258,11 +266,12 @@ export function applyFocusOverlay({
       mesh.visible = true;
       mesh.position.x = lerp(stripX, 0, t);
       mesh.position.y = lerp(stripY, detail.lift * t, t);
-      mesh.position.z = lerp(0, config.focusZ, t);
+      mesh.position.z = currentFocusZ;
       const detailScale = lerp(1, detail.scale, t);
+      const targetScale = heroScale.x * detailScale;
       mesh.scale.set(
-        lerp(stripScale, heroScale.x * detailScale, t),
-        lerp(stripScale, heroScale.y * detailScale, t),
+        lerp(stripScale, targetScale, t),
+        lerp(stripScale, targetScale, t),
         1,
       );
       mesh.material.opacity = lerp(stripOpacity, detail.opacity, t);
@@ -293,8 +302,8 @@ export function applyFocusOverlay({
 }
 
 /**
- * Local mesh scale that maps the plane to the inset viewport at `focusZ`
- * (fills the framed area; texture cover still crops the photo).
+ * Uniform local mesh scale that covers the inset viewport at the given depth
+ * (object-fit: cover). Same scale on X and Y so the expand animation stays smooth.
  */
 function getHeroScale(
   camera: THREE.PerspectiveCamera,
@@ -303,13 +312,13 @@ function getHeroScale(
   slide: SlideMesh,
   focusFill: number,
   focusInsetPx: number,
-  focusZ: number,
+  depthZ: number,
 ) {
   const geometry = slide.mesh.geometry;
   const planeWidth = geometry.parameters.width;
   const planeHeight = geometry.parameters.height;
 
-  const distance = Math.max(0.15, camera.position.z - groupScale * focusZ);
+  const distance = Math.max(0.15, camera.position.z - groupScale * depthZ);
   const visibleHeight = 2 * distance * Math.tan(degToRad(camera.fov) / 2);
   const visibleWidth = visibleHeight * camera.aspect;
 
@@ -318,8 +327,9 @@ function getHeroScale(
   const targetWidth = visibleWidth * (1 - (2 * insetX) / viewport.width) * focusFill;
   const targetHeight = visibleHeight * (1 - (2 * insetY) / viewport.height) * focusFill;
 
-  return {
-    x: targetWidth / (planeWidth * groupScale),
-    y: targetHeight / (planeHeight * groupScale),
-  };
+  const sx = targetWidth / (planeWidth * groupScale);
+  const sy = targetHeight / (planeHeight * groupScale);
+  const s = Math.max(sx, sy);
+
+  return { x: s, y: s };
 }

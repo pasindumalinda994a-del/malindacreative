@@ -12,6 +12,7 @@ import {
   flattenSlide,
   lockFullscreenCover,
   placeSlide,
+  restoreStripCover,
   updateParallax,
 } from "./effects";
 import {
@@ -98,6 +99,8 @@ export function createSliderController(
   let activeIndex = -1;
   let view: SliderView = "browse";
   let hoverIndex = -1;
+  /** Slide whose texture UVs were switched to fullscreen cover; restore on exit. */
+  let coverLockedIndex = -1;
 
   function setActiveIndex(index: number) {
     if (index === activeIndex) return;
@@ -228,7 +231,8 @@ export function createSliderController(
   }
 
   // --- Input -----------------------------------------------------------------
-  const removeSliderInput = attachSliderInput(canvas, motion, config, {
+  // Config via getter so narrow speed / momentum overrides apply after resize.
+  const removeSliderInput = attachSliderInput(canvas, motion, () => config, {
     onSelect: (clientX, clientY) => {
       // The opened hero only closes via the UI — ignore canvas clicks while focused.
       if (isFocusActive(focus)) return;
@@ -325,18 +329,24 @@ export function createSliderController(
       }
     }
 
+    const detailPose = getDetailPose(detail.progress, config);
     applyFocusOverlay({
       slideMeshes: sliderScene.slideMeshes,
       slideGroup: sliderScene.slideGroup,
       camera: sliderScene.camera,
       viewport: sliderScene.viewport,
       focus,
-      detail: getDetailPose(detail.progress, config),
+      detail: detailPose,
       config,
     });
 
     if (focus.index >= 0 && focus.progress > 0) {
-      lockFullscreenCover(sliderScene.slideMeshes[focus.index]);
+      const coverZoom = config.parallaxStrength * (1 - focus.progress);
+      lockFullscreenCover(sliderScene.slideMeshes[focus.index], coverZoom);
+      coverLockedIndex = focus.index;
+    } else if (coverLockedIndex >= 0) {
+      restoreStripCover(sliderScene.slideMeshes[coverLockedIndex], config);
+      coverLockedIndex = -1;
     }
 
     // Hover: at most one raycast per frame, only while browsing.
