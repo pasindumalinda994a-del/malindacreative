@@ -21,6 +21,14 @@ export type Slide = {
   body: string[];
   /** Additional visuals shown further down the project page. */
   gallery: string[];
+  /** Client comment shown at the bottom of the project detail. */
+  testimonial: {
+    quote: string;
+    author: string;
+    role: string;
+    /** Path to a portrait inside the `public` folder. */
+    portrait: string;
+  };
 };
 
 // Add, remove or reorder slides here. Images live in `public/slides/`.
@@ -42,6 +50,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. Every image was composed around a single diagonal — the line of the tool — so the set reads as one gesture when shown in sequence.",
     ],
     gallery: ["/slides/img5.jpg", "/slides/img10.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. They treated the tool like a character — every frame felt deliberate without ever looking forced.",
+      author: "Mira Chen",
+      role: "Creative Director, Placeholder Studio",
+      portrait: "/slides/img3.jpg",
+    },
   },
   {
     slug: "velum-drift",
@@ -59,6 +74,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. The 3D passes were used only to extend what the camera had already found, never to replace it.",
     ],
     gallery: ["/slides/img7.jpg", "/slides/img9.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. The motion had weight and quiet at once — our fabric finally looked like it breathed on screen.",
+      author: "Elena Vos",
+      role: "Brand Lead, Placeholder Textiles",
+      portrait: "/slides/img7.jpg",
+    },
   },
   {
     slug: "quiet-exchange",
@@ -76,6 +98,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. Typography in the printed piece mirrors that stillness: one serif, one size, generous margins.",
     ],
     gallery: ["/slides/img8.jpg", "/slides/img4.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. They found the story in the pause between sentences. The essay feels like the conversation itself.",
+      author: "Jonah Reed",
+      role: "Editor, Placeholder Journal",
+      portrait: "/slides/img8.jpg",
+    },
   },
   {
     slug: "earth-routine",
@@ -93,6 +122,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. The final film runs at the pace of the work itself: unhurried, repetitive, exact.",
     ],
     gallery: ["/slides/img1.jpg", "/slides/img6.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. They stayed with the work long enough to see its rhythm — the film moves at the pace of the field.",
+      author: "Sam Ortiz",
+      role: "Founder, Placeholder Farm Co.",
+      portrait: "/slides/img4.jpg",
+    },
   },
   {
     slug: "metal-echo",
@@ -110,6 +146,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. The set was designed to be read at a distance, which pushed every composition toward one strong shape.",
     ],
     gallery: ["/slides/img3.jpg", "/slides/img2.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. Hard light, honest marks — the product finally looked like something that had been made, not merely shown.",
+      author: "Rhea Okonkwo",
+      role: "Studio Head, Placeholder Metalworks",
+      portrait: "/slides/img5.jpg",
+    },
   },
   {
     slug: "tanned-edge",
@@ -127,6 +170,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. Packaging uses unbleached board so the leather is always the warmest thing in the frame.",
     ],
     gallery: ["/slides/img9.jpg", "/slides/img1.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. The identity cuts as cleanly as our edges — restrained, warm, and unmistakably ours.",
+      author: "Luis Andrade",
+      role: "Owner, Placeholder Leather Atelier",
+      portrait: "/slides/img6.jpg",
+    },
   },
   {
     slug: "humidity",
@@ -144,6 +194,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. The soundtrack was recorded in the same room; the drips are real.",
     ],
     gallery: ["/slides/img2.jpg", "/slides/img8.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. A self-set bar that still feels rare — patience, atmosphere, and sound that belongs to the room.",
+      author: "Malinda Creative",
+      role: "Director, Self-initiated",
+      portrait: "/slides/img1.jpg",
+    },
   },
   {
     slug: "limestone-air",
@@ -161,6 +218,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. The book is bound uncoated, with a single ink, and opens flat.",
     ],
     gallery: ["/slides/img4.jpg", "/slides/img10.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. They photographed air as carefully as stone — the monograph holds the same quiet we build into rooms.",
+      author: "Aya Nomura",
+      role: "Partner, Placeholder Architects",
+      portrait: "/slides/img2.jpg",
+    },
   },
   {
     slug: "warm-surface",
@@ -178,6 +242,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. Color grading was done in print first, then matched on screen, not the other way around.",
     ],
     gallery: ["/slides/img6.jpg", "/slides/img3.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. Close, warm, and honest — the campaign treats skin as landscape without ever turning clinical.",
+      author: "Priya Nair",
+      role: "Marketing Director, Placeholder Skincare",
+      portrait: "/slides/img9.jpg",
+    },
   },
   {
     slug: "dust-and-craft",
@@ -195,6 +266,13 @@ export const slides: Slide[] = [
       "Placeholder body copy. The website carries the same restraint: one column, one typeface, images that load slowly on purpose.",
     ],
     gallery: ["/slides/img5.jpg", "/slides/img7.jpg"],
+    testimonial: {
+      quote:
+        "Placeholder client note. They waited for the dust to settle — the film and stills feel like the workshop after hours.",
+      author: "Tomás Hale",
+      role: "Principal, Placeholder Woodworks",
+      portrait: "/slides/img10.jpg",
+    },
   },
 ];
 

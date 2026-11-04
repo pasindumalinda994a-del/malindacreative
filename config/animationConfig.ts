@@ -132,7 +132,7 @@ const baseConfig = {
   /** How far the hero drifts upward (world units) at full detail scroll. */
   detailLift: 0.25,
   /** Hero opacity at full detail scroll. */
-  detailOpacity: 0.85,
+  detailOpacity: 1,
 
   // --- Camera ---------------------------------------------------------
   /** Camera field of view in degrees. Lower = flatter, more "telephoto" look. */

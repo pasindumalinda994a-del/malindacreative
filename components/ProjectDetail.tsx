@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useLenis } from "lenis/react";
 import type { Slide } from "@/config/slides";
+import { SmoothScroll } from "@/components/SmoothScroll";
 
 type ProjectDetailProps = {
   slide: Slide;
@@ -26,6 +28,60 @@ const stagger = (i: number) =>
   ({ "--i": i, "--stagger-base": "180ms" }) as CSSProperties;
 
 /**
+ * Lives inside SmoothScroll so useLenis can reach the nested instance.
+ * Resets on project change and reports hero scroll progress from Lenis.
+ */
+function DetailScrollSync({
+  slug,
+  onScrollProgress,
+  onHeroCovered,
+}: {
+  slug: string;
+  onScrollProgress: (progress: number) => void;
+  onHeroCovered: (covered: boolean) => void;
+}) {
+  const covered = useRef(false);
+  const frame = useRef(0);
+  const lenis = useLenis();
+
+  useEffect(() => {
+    lenis?.scrollTo(0, { immediate: true });
+    covered.current = false;
+    onHeroCovered(false);
+    onScrollProgress(0);
+    const root = lenis?.rootElement;
+    if (root) root.style.setProperty("--detail-p", "0");
+  }, [slug, lenis, onHeroCovered, onScrollProgress]);
+
+  useLenis(
+    (instance) => {
+      if (frame.current) return;
+      frame.current = requestAnimationFrame(() => {
+        frame.current = 0;
+        const root = instance.rootElement;
+        const viewport = Math.max(1, root.clientHeight);
+        const progress = Math.min(1, Math.max(0, instance.scroll / (viewport * 0.9)));
+        onScrollProgress(progress);
+        root.style.setProperty("--detail-p", progress.toFixed(3));
+
+        const nowCovered = covered.current ? progress > 0.78 : progress > 0.9;
+        if (nowCovered !== covered.current) {
+          covered.current = nowCovered;
+          onHeroCovered(nowCovered);
+        }
+      });
+    },
+    [onScrollProgress, onHeroCovered],
+  );
+
+  useEffect(() => {
+    return () => cancelAnimationFrame(frame.current);
+  }, []);
+
+  return null;
+}
+
+/**
  * The project page, layered over the opened WebGL hero.
  * The first viewport is transparent so the image stays the main element;
  * the content below sits on a paper surface and scrolls over it.
@@ -41,10 +97,7 @@ export function ProjectDetail({
   onScrollProgress,
   onHeroCovered,
 }: ProjectDetailProps) {
-  const layer = useRef<HTMLDivElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
-  const covered = useRef(false);
-  const frame = useRef(0);
   // Start invisible so the first paint can transition into the open state.
   const [entered, setEntered] = useState(false);
 
@@ -66,47 +119,6 @@ export function ProjectDetail({
     };
   }, []);
 
-  // Reset scroll and hero state when the project changes.
-  useEffect(() => {
-    const node = layer.current;
-    if (node) node.scrollTop = 0;
-    covered.current = false;
-    onHeroCovered(false);
-    onScrollProgress(0);
-  }, [slide.slug, onHeroCovered, onScrollProgress]);
-
-  // Report scroll at most once per frame; refs only, no React state.
-  useEffect(() => {
-    const node = layer.current;
-    if (!node) return;
-
-    const report = () => {
-      frame.current = 0;
-      const viewport = Math.max(1, node.clientHeight);
-      const progress = Math.min(1, Math.max(0, node.scrollTop / (viewport * 0.9)));
-      onScrollProgress(progress);
-      // Lets the scrims fade with the hero without re-rendering.
-      node.style.setProperty("--detail-p", progress.toFixed(3));
-
-      // Hysteresis so the header tone does not flicker around the threshold.
-      const nowCovered = covered.current ? progress > 0.78 : progress > 0.9;
-      if (nowCovered !== covered.current) {
-        covered.current = nowCovered;
-        onHeroCovered(nowCovered);
-      }
-    };
-
-    const onScroll = () => {
-      if (!frame.current) frame.current = requestAnimationFrame(report);
-    };
-
-    node.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      node.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(frame.current);
-    };
-  }, [onScrollProgress, onHeroCovered]);
-
   const credits: [string, string][] = [
     ["Client", slide.client],
     ["Year", slide.year],
@@ -118,8 +130,7 @@ export function ProjectDetail({
   const visible = entered && !closing;
 
   return (
-    <div
-      ref={layer}
+    <SmoothScroll
       role="dialog"
       aria-labelledby="project-title"
       data-closing={closing}
@@ -127,6 +138,11 @@ export function ProjectDetail({
         visible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
+      <DetailScrollSync
+        slug={slide.slug}
+        onScrollProgress={onScrollProgress}
+        onHeroCovered={onHeroCovered}
+      />
       {/* --- 1. Hero viewport: transparent over the WebGL image ----------------- */}
       <section className="relative h-svh w-full text-paper">
         {/* Full-bleed frame over the WebGL hero (no margin / radius). */}
@@ -298,6 +314,46 @@ export function ProjectDetail({
               </figure>
             ))}
           </div>
+
+          {/* Client words */}
+          <div className="mt-24 border-t border-rule pt-16 md:mt-32 md:pt-24">
+            <div className="grid grid-cols-12 gap-x-4 md:gap-x-6">
+              <p className="label-mono col-span-12 mb-6 text-ink-muted md:col-span-3 md:mb-0">
+                Client words
+              </p>
+              <blockquote className="col-span-12 md:col-span-8">
+                <div className="flex gap-5 md:gap-6">
+                  <span
+                    aria-hidden
+                    className="mt-1.5 hidden w-px shrink-0 bg-accent md:block md:self-stretch"
+                  />
+                  <div className="min-w-0">
+                    <p className="font-display text-[clamp(1.375rem,2.4vw,2.125rem)] leading-[1.25] italic text-ink">
+                      {slide.testimonial.quote}
+                    </p>
+                    <footer className="mt-8 flex items-center gap-4 sm:mt-10">
+                      <div className="size-12 shrink-0 overflow-hidden rounded-sm bg-paper-2 sm:size-14">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={slide.testimonial.portrait}
+                          alt={slide.testimonial.author}
+                          loading="lazy"
+                          draggable={false}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex flex-col gap-1">
+                        <cite className="not-italic text-sm leading-none text-ink">
+                          {slide.testimonial.author}
+                        </cite>
+                        <span className="label-mono text-ink-muted">{slide.testimonial.role}</span>
+                      </div>
+                    </footer>
+                  </div>
+                </div>
+              </blockquote>
+            </div>
+          </div>
         </div>
 
         {/* Next project */}
@@ -340,6 +396,6 @@ export function ProjectDetail({
           </div>
         </footer>
       </section>
-    </div>
+    </SmoothScroll>
   );
 }
