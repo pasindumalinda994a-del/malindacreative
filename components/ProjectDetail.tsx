@@ -4,6 +4,11 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useLenis } from "lenis/react";
 import type { Slide } from "@/config/slides";
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { ProjectBody } from "@/components/ProjectBody";
+import { ProjectCredits } from "@/components/ProjectCredits";
+import { ProjectGallery } from "@/components/ProjectGallery";
+import { ProjectIntro } from "@/components/ProjectIntro";
+import { ProjectTestimonial } from "@/components/ProjectTestimonial";
 
 type ProjectDetailProps = {
   slide: Slide;
@@ -238,122 +243,23 @@ export function ProjectDetail({
       <section className="relative bg-paper text-ink">
         <div className="px-6 pb-24 pt-16 md:px-10 md:pb-32 md:pt-24">
           {/* Credits table */}
-          <div className="grid grid-cols-12 gap-x-4 md:gap-x-6">
-            <p className="label-mono col-span-12 mb-6 text-ink-muted md:col-span-3 md:mb-0">
-              Project credits
-            </p>
-            <dl className="col-span-12 md:col-span-9">
-              {credits.map(([label, value]) => (
-                <div
-                  key={label}
-                  className="grid grid-cols-12 items-baseline gap-x-4 border-t border-rule py-3.5 last:border-b"
-                >
-                  <dt className="label-mono col-span-4 text-ink-muted md:col-span-3">{label}</dt>
-                  <dd className="col-span-8 text-right text-sm md:col-span-9 md:text-base">
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+          <ProjectCredits credits={credits} slug={slide.slug} />
 
           {/* Intro */}
-          <div className="mt-24 grid grid-cols-12 gap-x-4 md:mt-32 md:gap-x-6">
-            <p className="label-mono col-span-12 mb-6 text-ink-muted md:col-span-3 md:mb-0">
-              Introduction
-            </p>
-            <p className="col-span-12 font-display text-[clamp(1.625rem,3vw,2.75rem)] leading-[1.15] italic text-ink md:col-span-8">
-              {slide.intro}
-            </p>
-          </div>
+          <ProjectIntro intro={slide.intro} slug={slide.slug} />
 
           {/* Body */}
-          <div className="mt-20 grid grid-cols-12 gap-x-4 gap-y-8 md:mt-28 md:gap-x-6">
-            <p className="label-mono col-span-12 text-ink-muted md:col-span-3">About the work</p>
-            {slide.body.map((paragraph, i) => (
-              <p
-                key={i}
-                className={`col-span-12 text-[0.9375rem] leading-relaxed text-ink/85 md:col-span-4 ${
-                  i === 0 ? "" : "md:col-start-8"
-                }`}
-              >
-                {paragraph}
-              </p>
-            ))}
-          </div>
+          <ProjectBody body={slide.body} slug={slide.slug} />
 
           {/* Gallery */}
-          <div className="mt-24 grid grid-cols-12 gap-x-4 gap-y-10 md:mt-32 md:gap-x-6">
-            {slide.gallery.map((image, i) => (
-              <figure
-                key={image + i}
-                className={`col-span-12 ${i % 2 === 0 ? "md:col-span-7" : "md:col-span-5 md:mt-24"}`}
-              >
-                <div
-                  className={`overflow-hidden rounded-sm bg-paper-2 ${
-                    i % 2 === 0 ? "aspect-[4/3]" : "aspect-[3/4]"
-                  }`}
-                >
-                  {/* Plain <img>: the WebGL strip already loaded these exact files, so next/image would only re-encode them. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={image}
-                    alt=""
-                    loading="lazy"
-                    draggable={false}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <figcaption className="label-mono mt-3 flex justify-between text-ink-muted">
-                  <span>
-                    Fig. {pad(i + 1)} <span className="mx-2 text-rule-strong">—</span> Placeholder
-                    visual
-                  </span>
-                  <span>{slide.name}</span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          <ProjectGallery
+            gallery={slide.gallery}
+            name={slide.name}
+            slug={slide.slug}
+          />
 
           {/* Client words */}
-          <div className="mt-24 border-t border-rule pt-16 md:mt-32 md:pt-24">
-            <div className="grid grid-cols-12 gap-x-4 md:gap-x-6">
-              <p className="label-mono col-span-12 mb-6 text-ink-muted md:col-span-3 md:mb-0">
-                Client words
-              </p>
-              <blockquote className="col-span-12 md:col-span-8">
-                <div className="flex gap-5 md:gap-6">
-                  <span
-                    aria-hidden
-                    className="mt-1.5 hidden w-px shrink-0 bg-accent md:block md:self-stretch"
-                  />
-                  <div className="min-w-0">
-                    <p className="font-display text-[clamp(1.375rem,2.4vw,2.125rem)] leading-[1.25] italic text-ink">
-                      {slide.testimonial.quote}
-                    </p>
-                    <footer className="mt-8 flex items-center gap-4 sm:mt-10">
-                      <div className="size-12 shrink-0 overflow-hidden rounded-sm bg-paper-2 sm:size-14">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={slide.testimonial.portrait}
-                          alt={slide.testimonial.author}
-                          loading="lazy"
-                          draggable={false}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0 flex flex-col gap-1">
-                        <cite className="not-italic text-sm leading-none text-ink">
-                          {slide.testimonial.author}
-                        </cite>
-                        <span className="label-mono text-ink-muted">{slide.testimonial.role}</span>
-                      </div>
-                    </footer>
-                  </div>
-                </div>
-              </blockquote>
-            </div>
-          </div>
+          <ProjectTestimonial testimonial={slide.testimonial} slug={slide.slug} />
         </div>
 
         {/* Next project */}
