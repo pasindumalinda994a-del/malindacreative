@@ -38,6 +38,8 @@ export type SliderScene = {
   slideGroup: THREE.Group;
   scene: THREE.Scene;
   viewport: Viewport;
+  /** Resolves when every slide image has loaded or failed. The intro waits on this. */
+  texturesReady: Promise<void>;
   /** Swap the active config (e.g. narrow-screen overrides) and re-fit the camera. */
   setConfig: (config: AnimationConfig) => void;
   resize: () => void;
@@ -92,7 +94,19 @@ export function createSliderScene(
   const textureLoader = new THREE.TextureLoader();
   let isDisposed = false;
 
-  const slideMeshes: SlideMesh[] = slides.map((slide, index) => {
+  const textureLoads = slides.map(
+    (slide) =>
+      new Promise<THREE.Texture | null>((resolve) => {
+        textureLoader.load(
+          slide.image,
+          (texture) => resolve(texture),
+          undefined,
+          () => resolve(null),
+        );
+      }),
+  );
+
+  const slideMeshes: SlideMesh[] = slides.map((_, index) => {
     const height = layout.heights[index];
     const width = height * config.aspectRatio;
 
@@ -112,20 +126,6 @@ export function createSliderScene(
     const mesh = new THREE.Mesh(geometry, material);
     slideGroup.add(mesh);
 
-    textureLoader.load(slide.image, (texture) => {
-      if (isDisposed) {
-        texture.dispose();
-        return;
-      }
-
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.anisotropy = anisotropy;
-      applyCoverCrop(texture, width / height, config.parallaxStrength);
-      material.map = texture;
-      material.color.set(0xffffff);
-      material.needsUpdate = true;
-    });
-
     return {
       mesh,
       title: null,
@@ -133,6 +133,25 @@ export function createSliderScene(
       flatPositions: Float32Array.from(geometry.attributes.position.array),
       isBent: false,
     };
+  });
+
+  const texturesReady = Promise.all(textureLoads).then((textures) => {
+    textures.forEach((texture, index) => {
+      if (!texture) return;
+      if (isDisposed) {
+        texture.dispose();
+        return;
+      }
+
+      const mesh = slideMeshes[index].mesh;
+      const { width, height } = mesh.geometry.parameters;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = anisotropy;
+      applyCoverCrop(texture, width / height, config.parallaxStrength);
+      mesh.material.map = texture;
+      mesh.material.color.set(0xffffff);
+      mesh.material.needsUpdate = true;
+    });
   });
 
   // Labels are rasterised to canvas textures, so wait for the web font before drawing them.
@@ -153,8 +172,9 @@ export function createSliderScene(
       const { width, height } = geometry.parameters;
       const label = `${String(index + 1).padStart(2, "0")} — ${slides[index].name.toUpperCase()}`;
       const title = createSlideTitle(label, width, height, fontFamily, anisotropy);
-      // Start at the photo's current opacity so a label never pops in brighter than its image.
-      title.mesh.material.opacity = slideMesh.mesh.material.opacity;
+      // Hidden until the landing pose or the settled strip raises it, so a late
+      // label cannot flash on top of the iris.
+      title.mesh.material.opacity = 0;
       slideMesh.mesh.add(title.mesh);
       slideMesh.title = title;
     });
@@ -205,7 +225,18 @@ export function createSliderScene(
 
   resize();
 
-  return { slideMeshes, camera, slideGroup, scene, viewport, setConfig, resize, render, dispose };
+  return {
+    slideMeshes,
+    camera,
+    slideGroup,
+    scene,
+    viewport,
+    texturesReady,
+    setConfig,
+    resize,
+    render,
+    dispose,
+  };
 }
 
 /**

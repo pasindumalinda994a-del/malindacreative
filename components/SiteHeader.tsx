@@ -11,6 +11,8 @@ type SiteHeaderProps = {
   minimal?: boolean;
   /** Paint a soft paper fade behind the row (when scrolled content passes under it). */
   backdrop?: boolean;
+  /** False during the landing reveal. The row fades in once the strip has settled. */
+  revealed?: boolean;
 };
 
 const links = [
@@ -19,14 +21,23 @@ const links = [
 ];
 
 /** Fixed top row: brand mark, section links and the primary call to action. */
-export function SiteHeader({ tone, minimal = false, backdrop = false }: SiteHeaderProps) {
+export function SiteHeader({
+  tone,
+  minimal = false,
+  backdrop = false,
+  revealed = true,
+}: SiteHeaderProps) {
   const isPaper = tone === "paper";
   const textColor = isPaper ? "text-paper" : "text-ink";
   const ruleColor = isPaper ? "border-paper/30" : "border-rule";
+  const hit = revealed ? "pointer-events-auto" : "pointer-events-none";
 
   return (
     <header
-      className={`pointer-events-none fixed inset-x-0 top-0 z-40 px-6 pt-5 transition-colors duration-500 md:px-10 md:pt-6 ${textColor}`}
+      aria-hidden={!revealed}
+      className={`pointer-events-none fixed inset-x-0 top-0 z-40 px-6 pt-5 transition-[color,opacity] duration-1000 ease-out-expo md:px-10 md:pt-6 ${textColor} ${
+        revealed ? "opacity-100" : "opacity-0"
+      }`}
     >
       <div
         aria-hidden
@@ -39,7 +50,8 @@ export function SiteHeader({ tone, minimal = false, backdrop = false }: SiteHead
         <Link
           href="/"
           aria-label="M — home"
-          className="pointer-events-auto col-span-3 md:col-span-2"
+          className={`${hit} col-span-3 md:col-span-2`}
+          tabIndex={revealed ? 0 : -1}
         >
           <span className="display-serif text-[1.75rem] leading-none">M</span>
         </Link>
@@ -48,7 +60,7 @@ export function SiteHeader({ tone, minimal = false, backdrop = false }: SiteHead
         <nav
           aria-label="Primary"
           className={`col-span-5 grid grid-cols-2 gap-x-4 transition-opacity duration-500 md:col-span-6 md:col-start-4 md:grid-cols-3 md:gap-x-6 ${
-            minimal ? "pointer-events-none opacity-0" : "pointer-events-auto opacity-100"
+            minimal ? "pointer-events-none opacity-0" : `${hit} opacity-100`
           }`}
           aria-hidden={minimal}
         >
@@ -56,7 +68,7 @@ export function SiteHeader({ tone, minimal = false, backdrop = false }: SiteHead
             <a
               key={link.label}
               href={link.href}
-              tabIndex={minimal ? -1 : 0}
+              tabIndex={revealed && !minimal ? 0 : -1}
               className={`group label-mono flex items-center gap-2 border-t pt-3 ${ruleColor}`}
             >
               <span
@@ -73,7 +85,8 @@ export function SiteHeader({ tone, minimal = false, backdrop = false }: SiteHead
         {/* Primary call to action */}
         <a
           href="#"
-          className={`group pointer-events-auto col-span-4 flex justify-end border-t pt-3 md:col-span-3 md:col-start-10 ${ruleColor}`}
+          className={`group ${hit} col-span-4 flex justify-end border-t pt-3 md:col-span-3 md:col-start-10 ${ruleColor}`}
+          tabIndex={revealed ? 0 : -1}
         >
           <span className="label-mono link-draw inline-flex items-center gap-2">
             <span className="hidden sm:inline">Schedule a Meeting</span>

@@ -29,6 +29,7 @@ export function useInfiniteSlider(
   const [activeIndex, setActiveIndex] = useState(Math.max(0, initialOpenIndex));
   const [view, setView] = useState<SliderView>(initialOpenIndex >= 0 ? "detail" : "browse");
   const [hoverIndex, setHoverIndex] = useState(-1);
+  const [introSettled, setIntroSettled] = useState(initialOpenIndex >= 0);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -39,6 +40,9 @@ export function useInfiniteSlider(
     const deepLinkIndex =
       initialOpenIndex >= 0 && slides[initialOpenIndex]?.slug === urlSlug ? initialOpenIndex : -1;
 
+    // Reset on each mount so a StrictMode remount replays the reveal cleanly.
+    setIntroSettled(deepLinkIndex >= 0);
+
     const controller = createSliderController(
       canvasRef.current,
       slides,
@@ -47,6 +51,7 @@ export function useInfiniteSlider(
         onActiveIndex: setActiveIndex,
         onView: setView,
         onHover: setHoverIndex,
+        onIntroSettled: () => setIntroSettled(true),
       },
       { initialOpenIndex: deepLinkIndex },
     );
@@ -74,6 +79,7 @@ export function useInfiniteSlider(
     activeIndex,
     view,
     hoverIndex,
+    introSettled,
     isOpen: view === "detail",
     isBrowsing: view === "browse",
     open,

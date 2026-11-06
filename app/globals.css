@@ -37,6 +37,8 @@
     var(--text-ease, cubic-bezier(0.25, 1, 0.5, 1)) both;
   --animate-mask-up: mask-up var(--text-duration, 0.5s)
     var(--text-ease, cubic-bezier(0.25, 1, 0.5, 1)) both;
+  --animate-mask-down: mask-down var(--text-duration, 0.5s)
+    var(--text-ease, cubic-bezier(0.25, 1, 0.5, 1)) both;
   --animate-rise-in: rise-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-scrim-in: scrim-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-dot-pulse: bulb-glow 2.1s cubic-bezier(0.37, 0, 0.63, 1) infinite;
@@ -59,6 +61,16 @@
     }
     to {
       transform: translateY(0);
+    }
+  }
+
+  /* The landing count leaves the title line through the same mask. */
+  @keyframes mask-down {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(110%);
     }
   }
 
@@ -222,7 +234,8 @@ body {
   .animate-dot-pulse,
   .motion-safe\:animate-dot-pulse,
   .motion-safe\:animate-fade-up,
-  .motion-safe\:animate-mask-up {
+  .motion-safe\:animate-mask-up,
+  .motion-safe\:animate-mask-down {
     animation: none !important;
   }
 }

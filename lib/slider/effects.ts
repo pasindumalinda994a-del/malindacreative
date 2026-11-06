@@ -1,16 +1,24 @@
 import * as THREE from "three";
 import type { AnimationConfig, SliderDirection } from "@/config/animationConfig";
+import { setSlideReveal } from "./corners";
+import type { LandingPose } from "./intro";
 import type { SlideMesh } from "./scene";
 
 // This file is where config values turn into what you see.
 // The frame loop (lib/slider/controller.ts) calls these functions
 // for every slide, every frame, in this order:
 //   placeSlide -> applySlideEffects -> bendPlane -> updateParallax
+// While the landing intro is playing, applyLandingPose runs after the focus
+// overlay and applies the same parallax, so the last intro frame matches idle.
 
 /** Distance from the screen center at which the parallax drift is at its maximum. */
 const PARALLAX_DISTANCE = 3;
 /** Bend below this is treated as flat, so we can skip rewriting vertices. */
 const BEND_EPSILON = 1e-4;
+/** Titles stay hidden until the spread is mostly done, then fade in with it. */
+const TITLE_FADE_START = 0.78;
+/** Separates stacked planes so later irises paint in front without z-fighting. */
+const STACK_Z_STEP = 0.002;
 
 const { lerp, degToRad, clamp } = THREE.MathUtils;
 
@@ -28,8 +36,6 @@ export function placeSlide(slide: SlideMesh, position: number, direction: Slider
 }
 
 type SlideEffectInput = {
-  /** 0 = intro not started, 1 = intro finished. */
-  introProgress: number;
   /** Speed with direction, -1 to 1 (from updateMotion). */
   signedSpeed: number;
   /** Speed without direction, 0 to 1. */
@@ -37,32 +43,94 @@ type SlideEffectInput = {
 };
 
 /**
- * Applies the intro reveal and the speed effects to one slide:
- * opacity, scale, rotation and the intro offset.
+ * Applies the speed effects to one slide: scale and tilt.
+ * The landing reveal is a separate pass (applyLandingPose) so the two cannot stack.
  */
 export function applySlideEffects(
   slide: SlideMesh,
-  { introProgress, signedSpeed, speed }: SlideEffectInput,
+  { signedSpeed, speed }: SlideEffectInput,
   config: AnimationConfig,
 ) {
   const { mesh } = slide;
-  const introRemaining = 1 - introProgress; // 1 at the start, 0 when finished.
 
-  // Intro: blend from the "start" values to the resting values.
-  mesh.material.opacity = lerp(config.introStartOpacity, 1, introProgress);
-  if (slide.title) slide.title.mesh.material.opacity = mesh.material.opacity;
-  mesh.position.y -= introRemaining * config.introStartOffset;
-  mesh.rotation.z = degToRad(introRemaining * config.introStartRotation);
-  const introScale = lerp(config.introStartScale, 1, introProgress);
+  // Rest pose every frame. The focus overlay blends away from these values,
+  // so a close can fade the neighbors back in instead of leaving them at 0.
+  mesh.material.opacity = 1;
+  if (slide.title) slide.title.mesh.material.opacity = 1;
 
-  // Speed: shrink and tilt while moving fast.
   const speedScale = lerp(1, config.speedScale, speed);
-  mesh.scale.setScalar(introScale * speedScale);
+  mesh.scale.setScalar(speedScale);
 
   // Tilt around the axis that crosses the direction of travel.
   const tilt = degToRad(signedSpeed * config.speedTilt);
   mesh.rotation.x = config.direction === "vertical" ? tilt : 0;
   mesh.rotation.y = config.direction === "horizontal" ? tilt : 0;
+  mesh.rotation.z = 0;
+}
+
+/**
+ * Stacks the opening slides, irises them, then eases them out to their
+ * resting slots while the strip yaws from flat to `rollYaw`.
+ * Call after applyFocusOverlay, which otherwise forces the full yaw.
+ */
+export function applyLandingPose(
+  slides: SlideMesh[],
+  slideGroup: THREE.Group,
+  pose: LandingPose,
+  ranks: number[],
+  config: AnimationConfig,
+) {
+  const { spread } = pose;
+  slideGroup.rotation.y = lerp(0, degToRad(config.rollYaw), spread);
+
+  for (let index = 0; index < slides.length; index++) {
+    const slide = slides[index];
+    const { mesh } = slide;
+    const rank = ranks[index] ?? -1;
+    const inCluster = rank >= 0;
+
+    if (inCluster) {
+      if (config.direction === "horizontal") {
+        mesh.position.x = lerp(0, mesh.position.x, spread);
+      } else {
+        mesh.position.y = lerp(0, mesh.position.y, spread);
+      }
+      mesh.position.z = rank * STACK_Z_STEP * (1 - spread);
+      mesh.material.opacity = 1;
+      const mask = pose.masks[index] ?? 0;
+      setSlideReveal(mesh.material, mask);
+      applyIntroZoom(slide, lerp(config.maskZoom, 1, mask), config);
+    } else {
+      mesh.position.z = 0;
+      mesh.material.opacity = 0;
+      setSlideReveal(mesh.material, 1);
+    }
+
+    // Same drift the idle strip uses, so the crop does not change when the intro ends.
+    updateParallax(slide, config);
+
+    if (slide.title) {
+      const titleOpacity = inCluster ? clamp((spread - TITLE_FADE_START) / (1 - TITLE_FADE_START), 0, 1) : 0;
+      slide.title.mesh.material.opacity = titleOpacity;
+    }
+  }
+}
+
+/**
+ * Zooms the cover crop toward the center of the frame.
+ * `imageZoom` of 1 is the resting cover. Higher values match the sample's scale(2) image.
+ * Call updateParallax after this so the drift is applied on top of the zoom.
+ */
+export function applyIntroZoom(slide: SlideMesh, imageZoom: number, config: AnimationConfig) {
+  const texture = slide.mesh.material.map;
+  if (!texture) return;
+
+  const { width, height } = slide.mesh.geometry.parameters;
+  applyCoverCrop(texture, width / height, config.parallaxStrength);
+  if (imageZoom <= 1.001) return;
+
+  texture.repeat.multiplyScalar(1 / imageZoom);
+  texture.offset.set((1 - texture.repeat.x) / 2, (1 - texture.repeat.y) / 2);
 }
 
 /**

@@ -1,5 +1,4 @@
 import type { EaseName } from "@/lib/slider/easing";
-import type { IntroStaggerFrom } from "@/lib/slider/intro";
 
 export type SliderDirection = "vertical" | "horizontal";
 
@@ -13,7 +12,7 @@ const myOverrides: Partial<AnimationConfig> = {
   // bendStrength: 5,
   // gap: 0.3,
   // direction: "vertical",
-  // introStartRotation: 20,
+  // maskDuration: 1.35,
   // parallaxStrength: 0.1,
 };
 
@@ -76,25 +75,26 @@ const baseConfig = {
   /** How far each photo drifts inside its frame as it moves (0-0.3). 0 = off. */
   parallaxStrength: 0.2,
 
-  // --- Intro reveal (plays once when the page loads) ------------------
-  /** How long each slide takes to appear. */
-  introDuration: 2.2,
-  /** Wait before the first slide starts appearing. */
-  introDelay: 0.3,
-  /** Extra wait between one slide and the next. */
-  introStagger: 0.15,
-  /** Which slide appears first: "center" (middle outwards) or "start" (top / left first). */
-  introStaggerFrom: "center" as IntroStaggerFrom,
-  /** Easing curve of the reveal (see lib/slider/easing.ts for all options). */
-  introEase: "easeInOutCubic" as EaseName,
-  /** Starting size. 1 = full size, 0.5 = half size. */
-  introStartScale: 0.7,
-  /** Starting transparency. 0 = invisible, 1 = fully visible. */
-  introStartOpacity: 0,
-  /** How far below its resting place each slide starts. Negative = above. */
-  introStartOffset: 0,
-  /** Starting rotation in degrees. */
-  introStartRotation: 0,
+  // --- Landing reveal (plays once when the page loads) ---------------
+  /** Wait before the first iris opens. */
+  introDelay: 0.4,
+  /** How long one image's iris and zoom take. */
+  maskDuration: 1.35,
+  /** Extra wait between one stacked image and the next. */
+  maskStagger: 0.3,
+  /** Image zoom inside the frame at the start of each iris. 1 = no zoom. */
+  maskZoom: 2,
+  /** How long the stack takes to spread into the strip and gain side depth. */
+  spreadDuration: 2.4,
+  /**
+   * Spread starts when the last iris is this far along (0-1).
+   * 0.25 begins the move while that last mask is still opening, so there is no cut.
+   */
+  spreadOverlap: 0.25,
+  /** Easing of each iris (see lib/slider/easing.ts). */
+  introEase: "hop" as EaseName,
+  /** Easing of the horizontal spread and the side depth. Slower than the iris. */
+  spreadEase: "easeInOutCubic" as EaseName,
 
   // --- Text (title and number) ----------------------------------------
   /** How long the text fade-in takes when the slide changes. */
@@ -215,7 +215,8 @@ export function resolveResponsiveConfig(config: AnimationConfig, viewportWidth: 
 export function withReducedMotion(config: AnimationConfig): AnimationConfig {
   return {
     ...config,
-    introDuration: 0,
+    maskDuration: 0,
+    spreadDuration: 0,
     bendStrength: 0,
     speedTilt: 0,
     speedScale: 1,

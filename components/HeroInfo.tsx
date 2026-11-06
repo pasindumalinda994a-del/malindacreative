@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import type { Slide } from "@/config/slides";
 import { cssEasings, type EaseName } from "@/lib/slider/easing";
 
@@ -9,6 +9,10 @@ type HeroInfoProps = {
   total: number;
   /** Fades the whole layer out while a project is opening / open. */
   hidden: boolean;
+  /** False while the landing count still owns the title line. */
+  introSettled: boolean;
+  /** Landing progress, 0–100. Stays at 0 until the photos are ready. */
+  introCount: number;
   /** Text reveal length in seconds. */
   textDuration: number;
   /** How far the text rises while fading in, in rem. */
@@ -27,10 +31,17 @@ export function HeroInfo({
   index,
   total,
   hidden,
+  introSettled,
+  introCount,
   textDuration,
   textDistance,
   textEase,
 }: HeroInfoProps) {
+  // True when this view opened with the title already in place (deep link).
+  const openedOnTitle = useRef(introSettled).current;
+  const handoff = introSettled && !openedOnTitle;
+  const countLabel = String(introCount).padStart(3, "0");
+
   // CSS variables read by the `animate-mask-up` / `animate-fade-up` animations in app/globals.css.
   const textAnimationStyle = {
     "--text-duration": `${textDuration}s`,
@@ -50,15 +61,23 @@ export function HeroInfo({
       {/* Soft paper washes for header + bottom project info over bright imagery. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-28 animate-scrim-in bg-gradient-to-b from-paper/95 via-paper/55 to-transparent md:h-44 [animation-duration:1.25s] [animation-delay:80ms]"
+        className={`pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-paper/95 via-paper/55 to-transparent md:h-44 ${
+          introSettled ? "animate-scrim-in [animation-duration:1.25s] [animation-delay:80ms]" : "opacity-0"
+        }`}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[32%] animate-scrim-in bg-gradient-to-t from-paper via-paper/45 to-transparent md:h-[46%] [animation-duration:1.15s] [animation-delay:40ms]"
+        className={`pointer-events-none absolute inset-x-0 bottom-0 h-[32%] bg-gradient-to-t from-paper via-paper/45 to-transparent md:h-[46%] ${
+          introSettled ? "animate-scrim-in [animation-duration:1.15s] [animation-delay:40ms]" : "opacity-0"
+        }`}
       />
 
       {/* Section label — top right, where the strip is farthest away. */}
-      <div className="absolute right-6 top-[5.5rem] flex flex-col items-end gap-1 text-right md:right-10 md:top-[6.5rem] md:gap-2">
+      <div
+        className={`absolute right-6 top-[5.5rem] flex flex-col items-end gap-1 text-right md:right-10 md:top-[6.5rem] md:gap-2 ${
+          introSettled ? "motion-safe:animate-fade-up" : "opacity-0"
+        }`}
+      >
         <p className="label-mono">Featured Projects</p>
         <p className="label-mono flex items-center gap-2 text-ink-muted/70 md:text-ink-muted">
           <span aria-hidden className="status-bulb size-1.5" />
@@ -73,14 +92,24 @@ export function HeroInfo({
           <div className="order-2 col-span-12 flex flex-col gap-3 md:order-1 md:col-span-4 md:gap-4">
             <p
               key={`${slide.slug}-description`}
-              className="max-w-[30ch] text-sm leading-relaxed text-ink-muted motion-safe:animate-fade-up [@media(max-height:620px)]:hidden"
+              className={`max-w-[30ch] text-sm leading-relaxed text-ink-muted [@media(max-height:620px)]:hidden ${
+                introSettled ? "motion-safe:animate-fade-up" : "opacity-0"
+              }`}
             >
               {slide.description}
             </p>
-            <p className="label-mono whitespace-nowrap text-ink-muted md:hidden">
+            <p
+              className={`label-mono whitespace-nowrap text-ink-muted md:hidden ${
+                introSettled ? "motion-safe:animate-fade-up" : "opacity-0"
+              }`}
+            >
               Swipe to explore <span className="mx-2 text-rule-strong">—</span> Tap to open
             </p>
-            <p className="label-mono hidden whitespace-nowrap text-ink-muted md:block">
+            <p
+              className={`label-mono hidden whitespace-nowrap text-ink-muted md:block ${
+                introSettled ? "motion-safe:animate-fade-up" : "opacity-0"
+              }`}
+            >
               Drag to explore <span className="mx-2 text-rule-strong">—</span> Click to open
             </p>
           </div>
@@ -89,7 +118,9 @@ export function HeroInfo({
           <div className="order-1 col-span-12 flex flex-col items-start gap-2 md:order-2 md:col-span-8 md:items-end md:gap-3 md:text-right">
             <p
               key={`${slide.slug}-meta`}
-              className="label-mono flex items-center gap-3 text-ink-muted motion-safe:animate-fade-up"
+              className={`label-mono flex items-center gap-3 text-ink-muted ${
+                introSettled ? "motion-safe:animate-fade-up" : "opacity-0"
+              }`}
             >
               <span className="text-ink tabular-nums">
                 {pad(index + 1)} <span className="text-rule-strong">/</span> {pad(total)}
@@ -100,14 +131,38 @@ export function HeroInfo({
               <span className="tabular-nums">{slide.year}</span>
             </p>
 
-            <h1 className="display-serif overflow-hidden text-[clamp(2.25rem,9vw,3.5rem)] text-ink md:text-[clamp(2.75rem,7.5vw,8rem)] [@media(max-height:620px)]:text-[clamp(2rem,5vw,4.5rem)]">
-              <span key={slide.slug} className="block pb-[0.08em] motion-safe:animate-mask-up">
+            <h1 className="display-serif grid w-full items-end overflow-hidden text-[clamp(2.25rem,9vw,3.5rem)] text-ink md:text-[clamp(2.75rem,7.5vw,8rem)] [@media(max-height:620px)]:text-[clamp(2rem,5vw,4.5rem)]">
+              {openedOnTitle ? null : (
+                <span
+                  aria-hidden
+                  className={`col-start-1 row-start-1 block pb-[0.08em] tabular-nums ${
+                    handoff ? "motion-safe:animate-mask-down motion-reduce:hidden" : ""
+                  }`}
+                >
+                  {countLabel}
+                </span>
+              )}
+              <span
+                key={slide.slug}
+                className={`col-start-1 row-start-1 block pb-[0.08em] ${
+                  openedOnTitle
+                    ? ""
+                    : handoff
+                      ? "motion-safe:animate-mask-up"
+                      : "translate-y-[110%]"
+                }`}
+              >
                 {slide.name}
               </span>
             </h1>
 
             {/* Progress rail: one segment per project. */}
-            <ol className="mt-1 flex w-full max-w-[22rem] items-center gap-1" aria-hidden>
+            <ol
+              className={`mt-1 flex w-full max-w-[22rem] items-center gap-1 ${
+                introSettled ? "" : "opacity-0"
+              }`}
+              aria-hidden
+            >
               {Array.from({ length: total }, (_, segment) => (
                 <li
                   key={segment}

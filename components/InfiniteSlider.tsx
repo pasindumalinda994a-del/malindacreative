@@ -34,7 +34,7 @@ export function InfiniteSlider({
   initialOpenIndex = -1,
   config = animationConfig,
 }: InfiniteSliderProps) {
-  const { canvasRef, activeIndex, view, hoverIndex, isOpen, open, close, setDetailScroll } =
+  const { canvasRef, activeIndex, view, hoverIndex, introSettled, isOpen, open, close, setDetailScroll } =
     useInfiniteSlider(slides, config, { initialOpenIndex });
 
   const activeSlide = slides[activeIndex] ?? slides[0];
@@ -107,7 +107,7 @@ export function InfiniteSlider({
 
   const showDetail = view === "detail" || view === "closing";
   const headerTone = view === "browse" || heroCovered ? "ink" : "paper";
-  const hovering = view === "browse" && hoverIndex >= 0;
+  const hovering = introSettled && view === "browse" && hoverIndex >= 0;
 
   return (
     <section aria-label="Featured projects" className="relative h-svh w-full overflow-hidden">
@@ -126,7 +126,7 @@ export function InfiniteSlider({
         ref={canvasRef}
         aria-label="Project strip. Swipe or drag to browse, tap or press Enter to open."
         className={`fixed inset-0 z-[1] h-full w-full touch-none ${
-          view !== "browse" ? "cursor-default" : hovering ? "cursor-none" : "cursor-grab"
+          !introSettled || view !== "browse" ? "cursor-default" : hovering ? "cursor-none" : "cursor-grab"
         }`}
       />
 
@@ -134,17 +134,22 @@ export function InfiniteSlider({
         tone={headerTone}
         minimal={view !== "browse"}
         backdrop={view === "detail" && heroCovered}
+        revealed={introSettled}
       />
 
-      <HeroInfo
-        slide={activeSlide}
-        index={activeIndex}
-        total={slides.length}
-        hidden={view !== "browse"}
-        textDuration={config.textDuration}
-        textDistance={config.textDistance}
-        textEase={config.textEase}
-      />
+      {introSettled ? (
+        <HeroInfo
+          slide={activeSlide}
+          index={activeIndex}
+          total={slides.length}
+          hidden={view !== "browse"}
+          introSettled
+          introCount={100}
+          textDuration={config.textDuration}
+          textDistance={config.textDistance}
+          textEase={config.textEase}
+        />
+      ) : null}
 
       <PointerLabel active={hovering} />
 

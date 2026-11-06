@@ -7,6 +7,7 @@ import {
 import type { Slide } from "@/config/slides";
 import { createDetailState, getDetailPose, setDetailTarget, updateDetail } from "./detail";
 import {
+  applyLandingPose,
   applySlideEffects,
   bendPlane,
   flattenSlide,
@@ -28,7 +29,7 @@ import {
   updateFocus,
 } from "./focus";
 import { attachSliderInput } from "./input";
-import { createIntroOrder, getIntroProgress } from "./intro";
+import { createLandingCast, getLandingPose } from "./intro";
 import { createSlideLayout, getLoopedPosition } from "./layout";
 import { addDistortionBurst, createMotionState, updateMotion } from "./motion";
 import { createSliderScene } from "./scene";
@@ -45,6 +46,8 @@ export type SliderControllerEvents = {
   onView?: (view: SliderView) => void;
   /** Slide under the pointer while browsing, or -1. */
   onHover?: (index: number) => void;
+  /** Fires once, when the landing reveal has finished or was skipped. */
+  onIntroSettled?: () => void;
 };
 
 export type SliderControllerOptions = {
@@ -124,9 +127,16 @@ export function createSliderController(
   const startPositions = layout.offsets.map((offset) =>
     getLoopedPosition(offset, 0, layout.loopLength),
   );
-  const introOrder = createIntroOrder(startPositions, config.introStaggerFrom);
+  const landingCast = createLandingCast(startPositions);
   /** Seconds added to the intro clock; a huge value skips the intro (deep links). */
   let introSkip = 0;
+  /** True once the spread has finished. Input stays locked until then. */
+  let introSettled = false;
+  /** The iris waits until every photo has loaded, unless the intro is skipped. */
+  let texturesReady = false;
+  void sliderScene.texturesReady.then(() => {
+    texturesReady = true;
+  });
 
   // --- Deep link: start already open --------------------------------------
   const initialOpenIndex = options.initialOpenIndex ?? -1;
@@ -159,6 +169,7 @@ export function createSliderController(
   let pendingOpenIndex = -1;
 
   function open(index: number) {
+    if (!introSettled) return;
     if (index < 0 || index >= slides.length) return;
 
     if (isFocusActive(focus)) {
@@ -251,7 +262,7 @@ export function createSliderController(
     onStep: step,
     onOpen: openActive,
     onClose: close,
-    getInputLocked: () => isInputLocked(focus),
+    getInputLocked: () => isInputLocked(focus) || !introSettled,
   });
 
   // --- Resize (and responsive config) ----------------------------------------
@@ -276,8 +287,9 @@ export function createSliderController(
     const deltaTime = Math.min(0.1, lastFrameTime ? (time - lastFrameTime) / 1000 : 1 / 60);
     lastFrameTime = time;
 
-    if (introStartTime === null) introStartTime = time;
-    const introElapsed = (time - introStartTime) / 1000 + introSkip;
+    if (introStartTime === null && (texturesReady || introSkip > 0)) introStartTime = time;
+    const introElapsed = introStartTime === null ? 0 : (time - introStartTime) / 1000 + introSkip;
+    const landingPose = getLandingPose(landingCast, introElapsed, config);
 
     updateFocus(focus, deltaTime, config, prefersReducedMotion);
     updateDetail(detail, deltaTime, prefersReducedMotion);
@@ -296,11 +308,13 @@ export function createSliderController(
       syncFocusScroll(focus, motion);
       motion.distortionTarget = 0;
       motion.distortionAmount += (0 - motion.distortionAmount) * config.bendSmoothing;
+    } else if (!introSettled) {
+      signedSpeed = 0;
     } else {
       signedSpeed = updateMotion(motion, deltaTime, config);
     }
 
-    const speed = isFocusActive(focus) ? 0 : motion.distortionAmount;
+    const speed = isFocusActive(focus) || !introSettled ? 0 : motion.distortionAmount;
     const bendStrength = config.bendStrength * (1 - focus.progress);
 
     let closestIndex = 0;
@@ -309,17 +323,16 @@ export function createSliderController(
     for (let index = 0; index < sliderScene.slideMeshes.length; index++) {
       const slideMesh = sliderScene.slideMeshes[index];
       const position = getLoopedPosition(slideMesh.offset, motion.scrollPosition, layout.loopLength);
-      const introProgress = getIntroProgress(introOrder[index], introElapsed, config);
 
       placeSlide(slideMesh, position, config.direction);
-      applySlideEffects(slideMesh, { introProgress, signedSpeed, speed }, config);
+      applySlideEffects(slideMesh, { signedSpeed, speed }, config);
 
       const isFocusedSlide = focus.index === index && focus.progress > 0;
       if (isFocusedSlide) {
         flattenSlide(slideMesh);
       } else {
         bendPlane(slideMesh, speed * bendStrength, config);
-        if (focus.progress < 1) updateParallax(slideMesh, config);
+        if (introSettled && focus.progress < 1) updateParallax(slideMesh, config);
       }
 
       const distance = Math.abs(position);
@@ -340,6 +353,26 @@ export function createSliderController(
       config,
     });
 
+    if (!introSettled) {
+      applyLandingPose(
+        sliderScene.slideMeshes,
+        sliderScene.slideGroup,
+        landingPose,
+        landingCast.ranks,
+        config,
+      );
+      // Settle after this pose so the last intro frame already matches the idle strip.
+      if (landingPose.settled) {
+        introSettled = true;
+        events.onIntroSettled?.();
+      }
+    } else if (!focusActive) {
+      // Labels created after the intro (web fonts) pick up the photo's opacity.
+      for (const slideMesh of sliderScene.slideMeshes) {
+        if (slideMesh.title) slideMesh.title.mesh.material.opacity = slideMesh.mesh.material.opacity;
+      }
+    }
+
     if (focus.index >= 0 && focus.progress > 0) {
       const coverZoom = config.parallaxStrength * (1 - focus.progress);
       lockFullscreenCover(sliderScene.slideMeshes[focus.index], coverZoom);
@@ -352,7 +385,7 @@ export function createSliderController(
     // Hover: at most one raycast per frame, only while browsing.
     if (pointerDirty) {
       pointerDirty = false;
-      setHoverIndex(isFocusActive(focus) ? -1 : pickSlideIndex(pointerX, pointerY));
+      setHoverIndex(isFocusActive(focus) || !introSettled ? -1 : pickSlideIndex(pointerX, pointerY));
     }
 
     setActiveIndex(focus.index >= 0 ? focus.index : closestIndex);
