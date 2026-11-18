@@ -30,6 +30,7 @@ export function useInfiniteSlider(
   const [view, setView] = useState<SliderView>(initialOpenIndex >= 0 ? "detail" : "browse");
   const [hoverIndex, setHoverIndex] = useState(-1);
   const [introSettled, setIntroSettled] = useState(initialOpenIndex >= 0);
+  const [introPercent, setIntroPercent] = useState(initialOpenIndex >= 0 ? 100 : 0);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -42,6 +43,7 @@ export function useInfiniteSlider(
 
     // Reset on each mount so a StrictMode remount replays the reveal cleanly.
     setIntroSettled(deepLinkIndex >= 0);
+    setIntroPercent(deepLinkIndex >= 0 ? 100 : 0);
 
     const controller = createSliderController(
       canvasRef.current,
@@ -51,7 +53,11 @@ export function useInfiniteSlider(
         onActiveIndex: setActiveIndex,
         onView: setView,
         onHover: setHoverIndex,
-        onIntroSettled: () => setIntroSettled(true),
+        onIntroProgress: setIntroPercent,
+        onIntroSettled: () => {
+          setIntroPercent(100);
+          setIntroSettled(true);
+        },
       },
       { initialOpenIndex: deepLinkIndex },
     );
@@ -80,6 +86,7 @@ export function useInfiniteSlider(
     view,
     hoverIndex,
     introSettled,
+    introPercent,
     isOpen: view === "detail",
     isBrowsing: view === "browse",
     open,

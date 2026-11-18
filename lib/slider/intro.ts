@@ -69,6 +69,20 @@ export function getLandingPose(
   return { settled: spread >= 1, spread, masks };
 }
 
+/**
+ * Maps the landing pose to a 0–100 UI percent.
+ * Masks own the first half of the climb; spread finishes it so the counter
+ * stays in step with what the eye sees on the strip.
+ */
+export function getLandingPercent(pose: LandingPose): number {
+  if (pose.settled) return 100;
+  const maskAvg =
+    pose.masks.length === 0
+      ? 0
+      : pose.masks.reduce((sum, value) => sum + value, 0) / pose.masks.length;
+  return Math.round(clamp01(maskAvg * 0.55 + pose.spread * 0.45) * 100);
+}
+
 function settledPose(cast: LandingCast): LandingPose {
   return {
     settled: true,

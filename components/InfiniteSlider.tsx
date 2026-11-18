@@ -6,6 +6,7 @@ import { getNextSlide, getSlideIndexBySlug, type Slide } from "@/config/slides";
 import { topographicConfig } from "@/config/topographicConfig";
 import { useInfiniteSlider } from "@/hooks/useInfiniteSlider";
 import { HeroInfo } from "./HeroInfo";
+import { LANDING_LOADER_EXIT_MS, LandingLoader } from "./LandingLoader";
 import { PointerLabel } from "./PointerLabel";
 import { ProjectDetail } from "./ProjectDetail";
 import { SiteHeader } from "./SiteHeader";
@@ -34,12 +35,47 @@ export function InfiniteSlider({
   initialOpenIndex = -1,
   config = animationConfig,
 }: InfiniteSliderProps) {
-  const { canvasRef, activeIndex, view, hoverIndex, introSettled, isOpen, open, close, setDetailScroll } =
-    useInfiniteSlider(slides, config, { initialOpenIndex });
+  const {
+    canvasRef,
+    activeIndex,
+    view,
+    hoverIndex,
+    introSettled,
+    introPercent,
+    isOpen,
+    open,
+    close,
+    setDetailScroll,
+  } = useInfiniteSlider(slides, config, { initialOpenIndex });
 
   const activeSlide = slides[activeIndex] ?? slides[0];
   const [heroCovered, setHeroCovered] = useState(false);
   const [narrowViewport, setNarrowViewport] = useState(false);
+  const skipIntroLoader = initialOpenIndex >= 0;
+  const [loaderMounted, setLoaderMounted] = useState(!skipIntroLoader);
+  const [loaderLeaving, setLoaderLeaving] = useState(false);
+
+  // Mount the counter only for a normal intro; fade it out under the header on settle.
+  useEffect(() => {
+    if (skipIntroLoader) {
+      setLoaderMounted(false);
+      setLoaderLeaving(false);
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setLoaderMounted(false);
+      setLoaderLeaving(false);
+      return;
+    }
+    if (!introSettled) {
+      setLoaderMounted(true);
+      setLoaderLeaving(false);
+      return;
+    }
+    setLoaderLeaving(true);
+    const id = window.setTimeout(() => setLoaderMounted(false), LANDING_LOADER_EXIT_MS);
+    return () => window.clearTimeout(id);
+  }, [introSettled, skipIntroLoader]);
 
   useEffect(() => {
     const media = window.matchMedia(`(max-width: ${config.narrowBreakpointPx - 1}px)`);
@@ -91,12 +127,12 @@ export function InfiniteSlider({
         close();
         return;
       }
-      const index = getSlideIndexBySlug(slug);
+      const index = getSlideIndexBySlug(slides, slug);
       if (index >= 0) open(index);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [open, close]);
+  }, [open, close, slides]);
 
   // --- Detail layer callbacks -----------------------------------------------
   const handleNext = useCallback(() => {
@@ -119,7 +155,8 @@ export function InfiniteSlider({
         opacity={topo.opacity}
         hover={topographicConfig.hover}
         paused={topographicConfig.paused || isOpen}
-        animateEntrance
+        animateEntrance={false}
+        revealed={introSettled || skipIntroLoader}
       />
 
       <canvas
@@ -130,26 +167,33 @@ export function InfiniteSlider({
         }`}
       />
 
+      {loaderMounted ? (
+        <LandingLoader percent={introPercent} leaving={loaderLeaving} />
+      ) : null}
+
       <SiteHeader
         tone={headerTone}
         minimal={view !== "browse"}
         backdrop={view === "detail" && heroCovered}
         revealed={introSettled}
+        revealDelayMs={skipIntroLoader ? 0 : Math.round(config.heroRevealHeaderDelay * 1000)}
       />
 
-      {introSettled ? (
-        <HeroInfo
-          slide={activeSlide}
-          index={activeIndex}
-          total={slides.length}
-          hidden={view !== "browse"}
-          introSettled
-          introCount={100}
-          textDuration={config.textDuration}
-          textDistance={config.textDistance}
-          textEase={config.textEase}
-        />
-      ) : null}
+      {/* Mounted during intro (hidden) so settle can run stagger / mask reveals. */}
+      <HeroInfo
+        slide={activeSlide}
+        index={activeIndex}
+        total={slides.length}
+        hidden={view !== "browse"}
+        introSettled={introSettled}
+        textDuration={config.textDuration}
+        textDistance={config.textDistance}
+        textEase={config.textEase}
+        revealStaggerBase={config.heroRevealStaggerBase}
+        revealStaggerStep={config.heroRevealStaggerStep}
+        titleRevealDuration={config.heroTitleRevealDuration}
+        titleRevealEase={config.heroTitleRevealEase}
+      />
 
       <PointerLabel active={hovering} />
 
@@ -157,7 +201,7 @@ export function InfiniteSlider({
         <ProjectDetail
           key={activeSlide.slug}
           slide={activeSlide}
-          nextSlide={getNextSlide(activeIndex)}
+          nextSlide={getNextSlide(slides, activeIndex) ?? activeSlide}
           index={activeIndex}
           total={slides.length}
           closing={view === "closing"}

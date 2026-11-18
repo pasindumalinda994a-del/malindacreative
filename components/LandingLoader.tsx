@@ -8,10 +8,11 @@ type LandingLoaderProps = {
 };
 
 const TENS = "0123456789";
+const EXIT_MS = 600;
 
 /**
- * The landing counter. It occupies the header's corner, then fades out
- * as the header fades in. Deep links and reduced motion never mount it.
+ * Landing progress chrome: edge-to-edge top rule + bottom-center count.
+ * Deep links and reduced motion never mount it.
  */
 export function LandingLoader({ percent, leaving = false }: LandingLoaderProps) {
   const safe = Math.min(100, Math.max(0, Math.round(percent)));
@@ -21,32 +22,31 @@ export function LandingLoader({ percent, leaving = false }: LandingLoaderProps) 
 
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 top-0 z-30 px-6 pt-5 transition-opacity duration-[600ms] ease-out-expo md:px-10 md:pt-6 ${
+      className={`pointer-events-none fixed inset-0 z-30 transition-opacity duration-[600ms] ease-out-expo ${
         leaving ? "opacity-0" : "opacity-100"
       }`}
     >
-      <div className="flex items-end gap-5 text-ink md:gap-7">
+      {/* Top full-bleed progress rule */}
+      <div aria-hidden className="absolute inset-x-0 top-0 h-[2px] bg-rule-strong">
         <div
-          aria-hidden
-          className="display-serif flex text-[clamp(4.5rem,10vw,7.25rem)] leading-none tabular-nums"
+          className="absolute inset-y-0 left-0 overflow-hidden transition-[width] duration-[450ms] ease-out-expo motion-reduce:transition-none"
+          style={{ width: `${safe}%` }}
         >
-          <DigitColumn digit={hundreds} glyphs="01" />
-          <DigitColumn digit={tens} glyphs={TENS} />
-          <DigitColumn digit={ones} glyphs={TENS} />
-        </div>
-
-        <div className="mb-2 flex w-28 flex-col gap-1.5 md:mb-3">
-          <MaskedLine>Project</MaskedLine>
-          <MaskedLine delay="120ms">loading</MaskedLine>
-          <div className="relative mt-2 h-px w-full">
-            <div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${safe}%` }}>
-              <div className="flex h-full w-28">
-                <span className="h-full w-1.5 bg-accent" />
-                <span className="h-full flex-1 bg-ink/45" />
-              </div>
-            </div>
+          <div className="flex h-full w-full min-w-[8rem]">
+            <span className="h-full w-1.5 shrink-0 bg-accent" />
+            <span className="h-full flex-1 bg-ink" />
           </div>
         </div>
+      </div>
+
+      {/* Bottom-center 16px mono odometer */}
+      <div
+        aria-hidden
+        className="absolute bottom-3 left-1/2 flex -translate-x-1/2 font-mono text-[16px] leading-none tabular-nums text-ink md:bottom-4"
+      >
+        <DigitColumn digit={hundreds} glyphs="01" />
+        <DigitColumn digit={tens} glyphs={TENS} />
+        <DigitColumn digit={ones} glyphs={TENS} />
       </div>
 
       <p className="sr-only" aria-live="polite">
@@ -56,18 +56,8 @@ export function LandingLoader({ percent, leaving = false }: LandingLoaderProps) 
   );
 }
 
-function MaskedLine({ children, delay }: { children: string; delay?: string }) {
-  return (
-    <span className="block overflow-hidden">
-      <span
-        className="label-mono block motion-safe:animate-mask-up"
-        style={delay ? { animationDelay: delay } : undefined}
-      >
-        {children}
-      </span>
-    </span>
-  );
-}
+/** Exit fade length — keep InfiniteSlider unmount delay in sync. */
+export const LANDING_LOADER_EXIT_MS = EXIT_MS;
 
 function DigitColumn({ digit, glyphs }: { digit: number; glyphs: string }) {
   const chars = glyphs.split("");

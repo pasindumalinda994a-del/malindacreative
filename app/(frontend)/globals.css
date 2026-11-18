@@ -133,8 +133,14 @@ html {
 }
 
 body {
-  @apply overflow-hidden bg-paper font-sans text-ink select-none;
+  @apply bg-paper font-sans text-ink;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Homepage strip locks the page; other routes (e.g. /schedule) scroll normally. */
+body:has([data-page="home"]) {
+  overflow: hidden;
+  user-select: none;
 }
 
 /* Tiny uppercase metadata, used everywhere a label sits beside a hairline. */

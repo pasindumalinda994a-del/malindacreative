@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+
+import { ScheduleShell } from "@/components/schedule/ScheduleShell";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,7 +28,11 @@ export const metadata: Metadata = {
     "An interactive portfolio of selected work, presented as a continuous 3D strip of featured projects.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function FrontendLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"
@@ -33,7 +40,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       {/* Browser extensions (e.g. ColorZilla, Grammarly) add attributes to <body>,
           which would otherwise cause a hydration warning. */}
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning className="bg-paper font-sans text-ink antialiased">
+        <ScheduleShell>{children}</ScheduleShell>
+      </body>
     </html>
   );
 }

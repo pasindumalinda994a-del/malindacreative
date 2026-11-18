@@ -67,7 +67,7 @@ const baseConfig = {
   /** Degrees the slides tilt at full speed. 0 = no tilt. */
   speedTilt: 0,
   /** Degrees the whole strip turns. Positive = right side of the screen farther back. */
-  rollYaw: 40,
+  rollYaw: 35,
   /** Slide size at full speed. 1 = no change, 0.85 = shrink to 85%. */
   speedScale: 0.9,
 
@@ -103,6 +103,18 @@ const baseConfig = {
   textDistance: 0.2,
   /** Easing curve of the text fade-in. */
   textEase: "easeInOutCubic" as EaseName,
+
+  // --- Landing chrome reveal (after the strip settles) ----------------
+  /** Delay before staggered hero copy starts rising, in seconds. */
+  heroRevealStaggerBase: 0.18,
+  /** Extra delay per staggered hero item, in seconds (matches CSS 70ms). */
+  heroRevealStaggerStep: 0.07,
+  /** Delay before the site header fades in, in seconds. */
+  heroRevealHeaderDelay: 0.12,
+  /** How long the project title mask-up takes on first reveal. */
+  heroTitleRevealDuration: 1.15,
+  /** Easing of the landing title mask (iris language). */
+  heroTitleRevealEase: "hop" as EaseName,
 
   // --- Hero expand (click a slide to fill the screen) -----------------
   /** How long the expand / collapse takes. */

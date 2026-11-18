@@ -31,7 +31,8 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env*.local
 
 # vercel
 .vercel
@@ -39,3 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Payload local media (used when BLOB_READ_WRITE_TOKEN is unset)
+/media
+/public/media
+
+# Payload generated import map may be regenerated
+# Keep committed importMap.js; types are generated on build
+payload-types.ts

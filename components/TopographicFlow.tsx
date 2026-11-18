@@ -34,6 +34,11 @@ export type TopographicFlowHandle = { reset: () => void };
 export type TopographicFlowProps = Partial<Omit<TopographicConfig, TopographicReliefProperties>> & {
   /** Fade in the first complete frame. Disable for an immediate entrance. */
   animateEntrance?: boolean;
+  /**
+   * When false, the contour canvas stays hidden (solid host background only).
+   * Flip to true to fade the lines in. Defaults to true.
+   */
+  revealed?: boolean;
   preset?: TopographicPreset;
   backgroundColor?: string;
   backgroundImage?: CSSProperties["backgroundImage"];
@@ -49,6 +54,7 @@ export const TopographicFlow = forwardRef<TopographicFlowHandle, TopographicFlow
   function TopographicFlow(
     {
       animateEntrance = topographicDefaults.animateEntrance,
+      revealed = true,
       preset = "paper",
       backgroundColor,
       backgroundImage,
@@ -199,6 +205,7 @@ export const TopographicFlow = forwardRef<TopographicFlowHandle, TopographicFlow
         ref={host}
         data-ready={ready}
         data-animate-entrance={animateEntrance}
+        data-revealed={revealed}
         className={`topographic-flow ${className}`}
         style={{
           height,

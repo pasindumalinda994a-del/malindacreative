@@ -276,14 +276,15 @@ export const slides: Slide[] = [
   },
 ];
 
-export function getSlideBySlug(slug: string) {
-  return slides.find((slide) => slide.slug === slug);
+export function getSlideBySlug(list: Slide[], slug: string) {
+  return list.find((slide) => slide.slug === slug);
 }
 
-export function getSlideIndexBySlug(slug: string) {
-  return slides.findIndex((slide) => slide.slug === slug);
+export function getSlideIndexBySlug(list: Slide[], slug: string) {
+  return list.findIndex((slide) => slide.slug === slug);
 }
 
-export function getNextSlide(index: number) {
-  return slides[(index + 1) % slides.length];
+export function getNextSlide(list: Slide[], index: number) {
+  if (list.length === 0) return undefined;
+  return list[(index + 1) % list.length];
 }

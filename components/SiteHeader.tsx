@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { useScheduleDrawer } from "@/components/schedule/ScheduleDrawerContext";
+
 export type HeaderTone = "ink" | "paper";
 
 type SiteHeaderProps = {
@@ -13,6 +15,8 @@ type SiteHeaderProps = {
   backdrop?: boolean;
   /** False during the landing reveal. The row fades in once the strip has settled. */
   revealed?: boolean;
+  /** Extra delay (ms) before the fade-in when `revealed` becomes true. */
+  revealDelayMs?: number;
 };
 
 const links = [
@@ -26,7 +30,9 @@ export function SiteHeader({
   minimal = false,
   backdrop = false,
   revealed = true,
+  revealDelayMs = 0,
 }: SiteHeaderProps) {
+  const { open, triggerRef } = useScheduleDrawer();
   const isPaper = tone === "paper";
   const textColor = isPaper ? "text-paper" : "text-ink";
   const ruleColor = isPaper ? "border-paper/30" : "border-rule";
@@ -35,6 +41,7 @@ export function SiteHeader({
   return (
     <header
       aria-hidden={!revealed}
+      style={{ transitionDelay: revealed ? `${revealDelayMs}ms` : "0ms" }}
       className={`pointer-events-none fixed inset-x-0 top-0 z-40 px-6 pt-5 transition-[color,opacity] duration-1000 ease-out-expo md:px-10 md:pt-6 ${textColor} ${
         revealed ? "opacity-100" : "opacity-0"
       }`}
@@ -46,7 +53,6 @@ export function SiteHeader({
         }`}
       />
       <div className="relative grid grid-cols-12 items-start gap-x-4 md:gap-x-6">
-        {/* Brand mark (temporary) */}
         <Link
           href="/"
           aria-label="M — home"
@@ -56,7 +62,6 @@ export function SiteHeader({
           <span className="display-serif text-[1.75rem] leading-none">M</span>
         </Link>
 
-        {/* Section links */}
         <nav
           aria-label="Primary"
           className={`col-span-5 grid grid-cols-2 gap-x-4 transition-opacity duration-500 md:col-span-6 md:col-start-4 md:grid-cols-3 md:gap-x-6 ${
@@ -82,10 +87,13 @@ export function SiteHeader({
           ))}
         </nav>
 
-        {/* Primary call to action */}
-        <a
-          href="#"
-          className={`group ${hit} col-span-4 flex justify-end border-t pt-3 md:col-span-3 md:col-start-10 ${ruleColor}`}
+        <button
+          type="button"
+          ref={(node) => {
+            triggerRef.current = node;
+          }}
+          onClick={open}
+          className={`group ${hit} col-span-4 flex justify-end border-t pt-3 text-left md:col-span-3 md:col-start-10 ${ruleColor}`}
           tabIndex={revealed ? 0 : -1}
         >
           <span className="label-mono link-draw inline-flex items-center gap-2">
@@ -98,7 +106,7 @@ export function SiteHeader({
               →
             </span>
           </span>
-        </a>
+        </button>
       </div>
     </header>
   );

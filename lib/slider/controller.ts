@@ -29,7 +29,7 @@ import {
   updateFocus,
 } from "./focus";
 import { attachSliderInput } from "./input";
-import { createLandingCast, getLandingPose } from "./intro";
+import { createLandingCast, getLandingPercent, getLandingPose } from "./intro";
 import { createSlideLayout, getLoopedPosition } from "./layout";
 import { addDistortionBurst, createMotionState, updateMotion } from "./motion";
 import { createSliderScene } from "./scene";
@@ -46,6 +46,8 @@ export type SliderControllerEvents = {
   onView?: (view: SliderView) => void;
   /** Slide under the pointer while browsing, or -1. */
   onHover?: (index: number) => void;
+  /** Landing progress 0–100 while the intro clock runs (textures wait at 0). */
+  onIntroProgress?: (percent: number) => void;
   /** Fires once, when the landing reveal has finished or was skipped. */
   onIntroSettled?: () => void;
 };
@@ -280,6 +282,7 @@ export function createSliderController(
   let animationFrameId = 0;
   let introStartTime: number | null = null;
   let lastFrameTime = 0;
+  let lastIntroPercent = -1;
 
   function animate(time: number) {
     animationFrameId = requestAnimationFrame(animate);
@@ -290,6 +293,14 @@ export function createSliderController(
     if (introStartTime === null && (texturesReady || introSkip > 0)) introStartTime = time;
     const introElapsed = introStartTime === null ? 0 : (time - introStartTime) / 1000 + introSkip;
     const landingPose = getLandingPose(landingCast, introElapsed, config);
+
+    if (!introSettled) {
+      const introPercent = introStartTime === null ? 0 : getLandingPercent(landingPose);
+      if (introPercent !== lastIntroPercent) {
+        lastIntroPercent = introPercent;
+        events.onIntroProgress?.(introPercent);
+      }
+    }
 
     updateFocus(focus, deltaTime, config, prefersReducedMotion);
     updateDetail(detail, deltaTime, prefersReducedMotion);
