@@ -8,7 +8,7 @@ export type SliderDirection = "vertical" | "horizontal";
 // Uncomment a line, save, and watch the slider change.
 // =====================================================================
 const myOverrides: Partial<AnimationConfig> = {
-  cameraDistance: 5.2,
+  cameraDistance: 5.4,
   // bendStrength: 5,
   // gap: 0.3,
   // direction: "vertical",
@@ -55,7 +55,7 @@ const baseConfig = {
 
   // --- Bend effect (grows with scroll speed) --------------------------
   /** How far slides bend at full speed. 0 = flat. Negative = bend away from you. */
-  bendStrength: 1.8,
+  bendStrength: 1.6,
   /** Size of the curved area around the screen center. */
   bendRadius: 3.5,
   /** Shape of the curve. Low = soft dome, high = sharp peak. */

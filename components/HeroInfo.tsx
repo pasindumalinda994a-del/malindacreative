@@ -55,8 +55,9 @@ export function HeroInfo({
   // Deep link / skipped intro: chrome is already in place.
   const deepLink = useRef(introSettled).current;
   const [revealed, setRevealed] = useState(introSettled);
-  // After the landing ladder finishes, keyed slide changes use fade-up instead of stagger.
+  // After the landing ladder finishes (or the user scrolls), keyed copy skips hero reveal.
   const slideFadeReady = useRef(deepLink);
+  const landingIndex = useRef(index);
 
   useEffect(() => {
     if (introSettled) setRevealed(true);
@@ -74,6 +75,11 @@ export function HeroInfo({
     }, ladderMs);
     return () => window.clearTimeout(id);
   }, [playLanding, staggerBaseMs, staggerStepMs, titleRevealDuration]);
+
+  // Scrolling to another project ends the hero reveal — no remount mask-up.
+  if (index !== landingIndex.current) {
+    slideFadeReady.current = true;
+  }
 
   const textAnimationStyle = {
     "--text-duration": `${textDuration}s`,
@@ -133,7 +139,10 @@ export function HeroInfo({
       >
         <p className="label-mono">Featured Projects</p>
         <p className="label-mono flex items-center gap-2 text-ink-muted/70 md:text-ink-muted">
-          <span aria-hidden className="status-bulb size-1.5" />
+          <span
+            aria-hidden
+            className="inline-block size-1.5 shrink-0 rounded-full bg-accent motion-safe:animate-dot-fade"
+          />
           {pad(total)} selected works
         </p>
       </div>
@@ -199,7 +208,11 @@ export function HeroInfo({
                   revealed && !deepLink && !slideFadeReady.current ? titleLandingStyle : undefined
                 }
                 className={`col-start-1 row-start-1 block pb-[0.08em] ${
-                  !revealed ? "translate-y-[110%]" : deepLink ? "" : "motion-safe:animate-mask-up"
+                  !revealed
+                    ? "translate-y-[110%]"
+                    : deepLink || slideFadeReady.current
+                      ? ""
+                      : "motion-safe:animate-mask-up"
                 }`}
               >
                 {slide.name}
