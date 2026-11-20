@@ -55,7 +55,7 @@ const baseConfig = {
 
   // --- Bend effect (grows with scroll speed) --------------------------
   /** How far slides bend at full speed. 0 = flat. Negative = bend away from you. */
-  bendStrength: 1.6,
+  bendStrength: 1.75,
   /** Size of the curved area around the screen center. */
   bendRadius: 3.5,
   /** Shape of the curve. Low = soft dome, high = sharp peak. */

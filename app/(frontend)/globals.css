@@ -42,6 +42,7 @@
   --animate-rise-in: rise-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-scrim-in: scrim-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-dot-fade: dot-fade 1.4s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  --animate-rainbow-spin: rainbow-spin 1.4s linear infinite;
 
   @keyframes fade-up {
     from {
@@ -108,6 +109,16 @@
     }
     100% {
       opacity: 0;
+    }
+  }
+
+  /* Fast continuous rainbow turn for About-hero pupils. */
+  @keyframes rainbow-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 }
@@ -180,10 +191,52 @@ body:has([data-page="home"]) {
   animation-delay: calc(var(--i, 0) * 70ms + var(--stagger-base, 0ms));
 }
 
+/* Conic spectrum fill used inside About-hero circular pupils. */
+.rainbow-pupil {
+  background: conic-gradient(
+    from 0deg,
+    #ff0040,
+    #ff8a00,
+    #ffe600,
+    #3dff6a,
+    #00d4ff,
+    #3d5bff,
+    #b000ff,
+    #ff0040
+  );
+}
+
+.rainbow-pupil--static {
+  background: var(--color-accent);
+  transform: none;
+}
+
+/*
+ * Real eyeball fill behind the pupil — soft white sphere with dark limbus
+ * and a light catch so the socket never reads as flat paper or rainbow plate.
+ */
+.eye-iris-fill {
+  background:
+    radial-gradient(
+      circle at 32% 28%,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(255 255 255 / 0) 28%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      #f7f4ef 0%,
+      #efeae3 38%,
+      #d8d2c8 62%,
+      #6a655c 82%,
+      #1a1814 100%
+    );
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stagger-rise,
   .animate-scrim-in,
   .animate-dot-fade,
+  .animate-rainbow-spin,
   .motion-safe\:animate-dot-fade,
   .motion-safe\:animate-fade-up,
   .motion-safe\:animate-mask-up,

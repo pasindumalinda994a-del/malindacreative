@@ -20,7 +20,7 @@ type SiteHeaderProps = {
 };
 
 const links = [
-  { label: "About", href: "#" },
+  { label: "About", href: "/about" },
   { label: "Insights", href: "#" },
 ];
 
@@ -69,22 +69,45 @@ export function SiteHeader({
           }`}
           aria-hidden={minimal}
         >
-          {links.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              tabIndex={revealed && !minimal ? 0 : -1}
-              className={`group label-mono flex items-center gap-2 border-t pt-3 ${ruleColor}`}
-            >
-              <span
-                aria-hidden
-                className="size-1.5 rounded-full bg-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
-              />
-              <span className="transition-transform duration-500 ease-out-expo group-hover:translate-x-0.5">
-                {link.label}
-              </span>
-            </a>
-          ))}
+          {links.map((link) => {
+            const isInternal = link.href.startsWith("/");
+            const className = `group label-mono flex items-center gap-2 border-t pt-3 ${ruleColor}`;
+            const inner = (
+              <>
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full bg-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
+                />
+                <span className="transition-transform duration-500 ease-out-expo group-hover:translate-x-0.5">
+                  {link.label}
+                </span>
+              </>
+            );
+
+            if (isInternal) {
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  tabIndex={revealed && !minimal ? 0 : -1}
+                  className={className}
+                >
+                  {inner}
+                </Link>
+              );
+            }
+
+            return (
+              <a
+                key={link.label}
+                href={link.href}
+                tabIndex={revealed && !minimal ? 0 : -1}
+                className={className}
+              >
+                {inner}
+              </a>
+            );
+          })}
         </nav>
 
         <button
