@@ -26,7 +26,9 @@ const RIGHT_EYE_DELAY = 1.05;
  * Max pupil travel = fraction of the ring between socket and pupil radii
  * so the ball stays inside the hole like a real iris.
  */
-const SOCKET_TRAVEL = 0.85;
+const RING_TRAVEL = 0.85;
+/** Subtle globe/socket shift as a fraction of iris radius (less than the eyeball). */
+const GLOBE_TRAVEL = 0.1;
 /** Vertical ellipse tighter than horizontal (almond lids). */
 const TRAVEL_Y_RATIO = 0.65;
 /** Pupil leads iris slightly for depth; iris stays within the same socket limit. */
@@ -43,10 +45,12 @@ const BROW_SCALE_Y = 0.03;
 
 /** Idle: wait before a micro-saccade when the pointer is still. */
 const IDLE_DELAY = 2.5;
-/** Idle micro-nudge radius in px. */
+/** Idle micro-nudge radius in px (iris/pupil only — socket stays calm). */
 const IDLE_NUDGE = 2.5;
 
 type GazeDrivers = {
+  socketX: gsap.QuickToFunc;
+  socketY: gsap.QuickToFunc;
   irisX: gsap.QuickToFunc;
   irisY: gsap.QuickToFunc;
   pupilX: gsap.QuickToFunc;
@@ -58,15 +62,25 @@ type GazeDrivers = {
 };
 
 function makeDrivers(
+  socket: HTMLElement,
   iris: HTMLElement,
   pupil: HTMLElement,
   brow: HTMLElement,
 ): GazeDrivers {
   const gazeEase = "power2.out";
   const gazeDuration = 0.25;
+  const socketDuration = 0.3;
   const browEase = "power3.out";
   const browDuration = 0.4;
   return {
+    socketX: gsap.quickTo(socket, "x", {
+      duration: socketDuration,
+      ease: gazeEase,
+    }),
+    socketY: gsap.quickTo(socket, "y", {
+      duration: socketDuration,
+      ease: gazeEase,
+    }),
     irisX: gsap.quickTo(iris, "x", { duration: gazeDuration, ease: gazeEase }),
     irisY: gsap.quickTo(iris, "y", { duration: gazeDuration, ease: gazeEase }),
     pupilX: gsap.quickTo(pupil, "x", {
@@ -101,7 +115,7 @@ function clampEllipse(dx: number, dy: number, maxX: number, maxY: number) {
 
 /**
  * Paper hero: pair of huge eyes with curved brand eyebrows and rainbow pupils.
- * Iris + pupil track the pointer with elliptical socket limits; brows react in 2D.
+ * Socket nudges subtly; iris + pupil lead inside; brows react in 2D.
  */
 export function AboutHero({ brand }: AboutHeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -112,19 +126,23 @@ export function AboutHero({ brand }: AboutHeroProps) {
     () => {
       const left = leftRef.current;
       const right = rightRef.current;
+      const leftSocket = left?.socket ?? null;
       const leftIris = left?.iris ?? null;
       const leftPupil = left?.pupil ?? null;
       const leftBrow = left?.brow ?? null;
       const leftEye = left?.eye ?? null;
+      const rightSocket = right?.socket ?? null;
       const rightIris = right?.iris ?? null;
       const rightPupil = right?.pupil ?? null;
       const rightBrow = right?.brow ?? null;
       const rightEye = right?.eye ?? null;
       if (
+        !leftSocket ||
         !leftIris ||
         !leftPupil ||
         !leftBrow ||
         !leftEye ||
+        !rightSocket ||
         !rightIris ||
         !rightPupil ||
         !rightBrow ||
@@ -135,8 +153,8 @@ export function AboutHero({ brand }: AboutHeroProps) {
 
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      // Center iris/pupil on the eye (GSAP x/y replace Tailwind -translate).
-      gsap.set([leftIris, leftPupil, rightIris, rightPupil], {
+      // Center socket / iris / pupil (GSAP x/y replace CSS translate).
+      gsap.set([leftSocket, rightSocket, leftIris, leftPupil, rightIris, rightPupil], {
         xPercent: -50,
         yPercent: -50,
         x: 0,
@@ -152,12 +170,21 @@ export function AboutHero({ brand }: AboutHeroProps) {
 
       if (reduced) return;
 
-      const leftDrive = makeDrivers(leftIris, leftPupil, leftBrow);
-      const rightDrive = makeDrivers(rightIris, rightPupil, rightBrow);
+      const leftDrive = makeDrivers(leftSocket, leftIris, leftPupil, leftBrow);
+      const rightDrive = makeDrivers(rightSocket, rightIris, rightPupil, rightBrow);
 
       let idleCall: gsap.core.Tween | null = null;
-      type GazePose = { irisX: number; irisY: number; pupilX: number; pupilY: number };
+      type GazePose = {
+        socketX: number;
+        socketY: number;
+        irisX: number;
+        irisY: number;
+        pupilX: number;
+        pupilY: number;
+      };
       const restPose = (): GazePose => ({
+        socketX: 0,
+        socketY: 0,
         irisX: 0,
         irisY: 0,
         pupilX: 0,
@@ -180,16 +207,23 @@ export function AboutHero({ brand }: AboutHeroProps) {
         const dx = clientX - cx;
         const dy = clientY - cy;
 
-        // Ring between socket and pupil — pupil center may travel this far and stay in-hole.
         const irisRadius = (rect.width * IRIS_SCALE) / 2;
         const pupilRadius = (rect.width * PUPIL_SCALE) / 2;
+
+        // Subtle globe shift — stays well inside the almond.
+        const globeMaxX = irisRadius * GLOBE_TRAVEL;
+        const globeMaxY = globeMaxX * TRAVEL_Y_RATIO;
+        const globe = clampEllipse(dx, dy, globeMaxX, globeMaxY);
+
+        // Ring between socket and pupil — pupil stays in-hole relative to socket.
         const ring = Math.max(0, irisRadius - pupilRadius);
-        const maxX = ring * SOCKET_TRAVEL;
+        const maxX = ring * RING_TRAVEL;
         const maxY = maxX * TRAVEL_Y_RATIO;
-        // Pupil reaches the socket-fit limit; iris lags slightly behind (lead).
         const pupil = clampEllipse(dx, dy, maxX, maxY);
         const iris = clampEllipse(dx, dy, maxX / PUPIL_LEAD, maxY / PUPIL_LEAD);
 
+        drive.socketX(globe.x);
+        drive.socketY(globe.y);
         drive.irisX(iris.x);
         drive.irisY(iris.y);
         drive.pupilX(pupil.x);
@@ -201,11 +235,12 @@ export function AboutHero({ brand }: AboutHeroProps) {
 
         drive.browRotate(nx * BROW_ROTATE);
         drive.browX(iris.x * BROW_X_FACTOR);
-        // Looking up (negative screen Y toward top) lifts the brow.
         drive.browY(-ny * BROW_Y_LIFT);
         drive.browScaleY(1 + intensity * BROW_SCALE_Y);
 
         lastPose[side] = {
+          socketX: globe.x,
+          socketY: globe.y,
           irisX: iris.x,
           irisY: iris.y,
           pupilX: pupil.x,
@@ -214,6 +249,8 @@ export function AboutHero({ brand }: AboutHeroProps) {
       };
 
       const resetDrivers = (drive: GazeDrivers) => {
+        drive.socketX(0);
+        drive.socketY(0);
         drive.irisX(0);
         drive.irisY(0);
         drive.pupilX(0);
@@ -230,6 +267,8 @@ export function AboutHero({ brand }: AboutHeroProps) {
       };
 
       const applyPose = (drive: GazeDrivers, pose: GazePose) => {
+        drive.socketX(pose.socketX);
+        drive.socketY(pose.socketY);
         drive.irisX(pose.irisX);
         drive.irisY(pose.irisY);
         drive.pupilX(pose.pupilX);
@@ -239,18 +278,22 @@ export function AboutHero({ brand }: AboutHeroProps) {
       const scheduleIdle = () => {
         killIdle();
         idleCall = gsap.delayedCall(IDLE_DELAY, () => {
-          // Tiny micro-saccade then settle back — keeps eyes “alive” at rest.
+          // Micro-saccade on iris/pupil only — socket stays put for a calmer globe.
           const angle = Math.random() * Math.PI * 2;
           const nx = Math.cos(angle) * IDLE_NUDGE;
           const ny = Math.sin(angle) * IDLE_NUDGE * 0.65;
 
           applyPose(leftDrive, {
+            socketX: lastPose.left.socketX,
+            socketY: lastPose.left.socketY,
             irisX: lastPose.left.irisX + nx / PUPIL_LEAD,
             irisY: lastPose.left.irisY + ny / PUPIL_LEAD,
             pupilX: lastPose.left.pupilX + nx,
             pupilY: lastPose.left.pupilY + ny,
           });
           applyPose(rightDrive, {
+            socketX: lastPose.right.socketX,
+            socketY: lastPose.right.socketY,
             irisX: lastPose.right.irisX + nx / PUPIL_LEAD,
             irisY: lastPose.right.irisY + ny / PUPIL_LEAD,
             pupilX: lastPose.right.pupilX + nx,

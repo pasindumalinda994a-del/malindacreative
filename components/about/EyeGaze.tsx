@@ -20,6 +20,7 @@ const IRIS_OVERSIZE = 1.55;
 export type EyeGazeHandle = {
   /** @deprecated Prefer `iris` — kept as alias for the iris disc wrapper. */
   gaze: HTMLDivElement | null;
+  socket: HTMLDivElement | null;
   iris: HTMLDivElement | null;
   pupil: HTMLDivElement | null;
   brow: HTMLDivElement | null;
@@ -35,14 +36,15 @@ type EyeGazeProps = {
 };
 
 /**
- * One eye column: reactive brow + socket-clipped iris/pupil that AboutHero drives.
- * Fixed circular socket matches the EyeMark hole; oversized iris always fills it.
+ * One eye column: fixed hole underlay + lightly driven socket globe
+ * containing iris/pupil. AboutHero drives socket / iris / pupil / brow.
  */
 export const EyeGaze = forwardRef<EyeGazeHandle, EyeGazeProps>(function EyeGaze(
   { brand, pathId, pupilDelay = 0, className },
   ref,
 ) {
   const eyeRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<HTMLDivElement>(null);
   const irisRef = useRef<HTMLDivElement>(null);
   const pupilRef = useRef<HTMLDivElement>(null);
   const browRef = useRef<HTMLDivElement>(null);
@@ -50,6 +52,9 @@ export const EyeGaze = forwardRef<EyeGazeHandle, EyeGazeProps>(function EyeGaze(
   useImperativeHandle(ref, () => ({
     get gaze() {
       return irisRef.current;
+    },
+    get socket() {
+      return socketRef.current;
     },
     get iris() {
       return irisRef.current;
@@ -78,17 +83,23 @@ export const EyeGaze = forwardRef<EyeGazeHandle, EyeGazeProps>(function EyeGaze(
         <EyeBrow label={brand} pathId={pathId} className="-mb-[1.5%] w-full" />
       </div>
       <div ref={eyeRef} className="relative min-h-0 w-fit flex-1">
-        {/* Fixed circular socket — matches EyeMark hole; never moves */}
+        {/* Fixed underlay — always fills the EyeMark hole so socket travel never shows paper */}
         <div
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-1/2 z-0 overflow-hidden rounded-full"
+          className="eye-iris-fill pointer-events-none absolute left-1/2 top-1/2 z-0 rounded-full"
           style={{
             width: socketSize,
             height: socketSize,
             transform: "translate(-50%, -50%)",
           }}
+        />
+        {/* Movable socket globe — GSAP owns centering + subtle gaze shift */}
+        <div
+          ref={socketRef}
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 z-[1] overflow-hidden rounded-full will-change-transform"
+          style={{ width: socketSize, height: socketSize }}
         >
-          {/* Oversized iris — GSAP translates the wrapper; fill spins on a child */}
           <div
             ref={irisRef}
             className="absolute left-1/2 top-1/2 will-change-transform"
@@ -96,7 +107,6 @@ export const EyeGaze = forwardRef<EyeGazeHandle, EyeGazeProps>(function EyeGaze(
           >
             <div className="eye-iris-fill absolute inset-0 rounded-full" />
           </div>
-          {/* Rainbow pupil — slight lead for depth; travel clamped in AboutHero */}
           <div
             ref={pupilRef}
             className="absolute left-1/2 top-1/2 z-[1] will-change-transform"
